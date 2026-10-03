@@ -291,7 +291,7 @@ async function copyGenerationBrief(){
   toast('Не удалось скопировать автоматически');
  }
 }
-async async function importArticleFromClipboard(){
+async function importArticleFromClipboard(){
  try{
   const html=await navigator.clipboard.readText();
   if(!html.trim()){toast('Буфер обмена пуст');return}
