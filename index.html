@@ -372,8 +372,19 @@ async function importBlogIndex(){
 function renderArticle(){
  const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
 }
-function setEditorMode(mode){
+function renderEditorTextView(){
  const a=get();
+ const view=document.getElementById('editorTextView');
+ if(!view)return;
+ let html=String(a.content||'');
+ if(/&lt;\/?[a-z][^&]*&gt;/i.test(html)){
+  const t=document.createElement('textarea');
+  t.innerHTML=html;
+  html=t.value;
+ }
+ view.innerHTML=html||'<p>Статья пока пуста.</p>';
+}
+function setEditorMode(mode){
  const htmlBtn=document.getElementById('editorHtmlBtn');
  const textBtn=document.getElementById('editorTextBtn');
  const area=document.getElementById('content');
@@ -382,7 +393,7 @@ function setEditorMode(mode){
  if(mode==='text'){
   area.classList.add('hidden');
   view.classList.remove('hidden');
-  view.innerHTML=a.content||'<p>Статья пока пуста.</p>';
+  renderEditorTextView();
   htmlBtn.classList.remove('primary');
   textBtn.classList.add('primary');
  }else{
@@ -501,7 +512,6 @@ function handleArticleFile(file){
  reader.readAsText(file);
 }
 
-function setEditorMode(mode){const a=get();const htmlBtn=document.getElementById('editorHtmlBtn');const textBtn=document.getElementById('editorTextBtn');const area=document.getElementById('content');const view=document.getElementById('editorTextView');if(!area||!view)return;if(mode==='text'){area.classList.add('hidden');view.classList.remove('hidden');view.innerHTML=a.content||'<p>Статья пока пуста.</p>';htmlBtn.classList.remove('primary');textBtn.classList.add('primary')}else{view.classList.add('hidden');area.classList.remove('hidden');htmlBtn.classList.add('primary');textBtn.classList.remove('primary')}}
 function saveArticleEdits(){
  save();
  toast('Правки статьи сохранены');
