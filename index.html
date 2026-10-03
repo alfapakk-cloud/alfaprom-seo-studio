@@ -74,7 +74,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
       <div class="field"><label>Description</label><textarea id="description" oninput="updateField('description',this.value)"></textarea></div>
       <div class="field"><label>H1</label><input id="h1" oninput="updateField('h1',this.value)"></div>
       <div class="field"><label>Структура H2/H3</label><textarea id="outline" style="min-height:250px" oninput="updateField('outline',this.value)"></textarea></div>
-      <div class="actions"><button class="btn primary" onclick="demoPlan()">⚙ Сформировать демо SEO-план</button><button class="btn" onclick="setStatus('work')">Перевести в генерацию</button></div>
+      <div class="actions"><button class="btn primary" onclick="demoPlan()">⚙ Сформировать демо SEO-план</button><button class="btn" onclick="prepareGeneration()">▶ Подготовить генерацию</button></div>
+      <div id="generationBrief" class="card" style="margin-top:18px;background:#fafafa"><h3>Генерационное задание</h3><div class="muted">Нажмите «Подготовить генерацию», чтобы собрать единый бриф для AI из SEO-данных, структуры и 23 критериев АЛЬФАПРОМ.</div></div>
     </div>
   </div>
   <div id="tab-editor" class="hidden">
@@ -190,6 +191,32 @@ function runQuality(){
  a.criteria=criteria.map((_,i)=>checks[i%checks.length]?'ok':'warn');
  a.scores={seo:Math.min(100,Math.round((txt.length/5000)*70+30)),orig:Math.min(100,Math.round((txt.length/4000)*60+30)),fact:50};
  save(true);renderCriteria();document.getElementById('qualityResult').innerHTML=`<div><b>Базовая MVP-проверка завершена.</b></div><p class="muted">Это пока структурный pre-check. Реальный фактчек, проверка поисковой выдачи и семантическая оригинальность подключаются к AI/API на следующем этапе.</p><div class="progress"><i style="width:${a.scores.seo}%"></i></div><p>SEO completeness: <b>${a.scores.seo}/100</b></p>`;toast('Проверка завершена')}
+function prepareGeneration(){
+ const a=get();
+ const brief={
+  context:'АЛЬФАПРОМ — экспертный B2B-материал о пищевом и упаковочном оборудовании.',
+  seo:{topic:a.topic,primaryQuery:a.keyword,additionalQueries:a.keywords,cluster:a.cluster,intent:a.intent},
+  userTask:{problem:a.problem,equipment:a.equipment,internalLinks:a.links},
+  meta:{title:a.title,description:a.description,h1:a.h1},
+  structure:a.outline,
+  criteria:criteria,
+  style:[
+   'Короткие читаемые абзацы.',
+   'Сильные H2/H3 и логичная композиция.',
+   'Естественный человеческий язык без шаблонных AI-фраз и бюрократизмов.',
+   'Конкретные факты, практические рекомендации, таблицы и списки там, где они действительно полезны.',
+   'Премиальная подача профессионального журнала об оборудовании.',
+   'Коммерческая часть ненавязчивая и преимущественно в конце.'
+  ],
+  output:'Полноценная экспертная SEO-статья по утверждённой структуре. Не выдумывать характеристики, цифры, источники или рекомендации. Если данных недостаточно — явно отметить, что требуется проверка.'
+ };
+ a.generationBrief=brief;
+ a.status='work';
+ save(true);
+ const e=document.getElementById('generationBrief');
+ e.innerHTML='<h3>Генерационное задание подготовлено</h3><p class="muted">В бриф вошли SEO-данные, структура, все 23 критерия АЛЬФАПРОМ и редакционные требования.</p><pre style="white-space:pre-wrap;max-height:420px;overflow:auto;background:#fff;border:1px solid var(--line);padding:12px;border-radius:7px">'+esc(JSON.stringify(brief,null,2))+'</pre><div class="small muted">Следующий шаг — подключить этот бриф к реальному AI-генератору. API-ключ в GitHub Pages не размещаем.</div>';
+ toast('Генерационный бриф подготовлен');
+}
 function demoPlan(){
  const a=get();a.title='MAP-упаковка: что это такое, как работает и какое оборудование нужно';a.description='Что такое MAP-упаковка и как работает упаковка в модифицированной газовой среде. Разбираем газы, оборудование, применение и ограничения технологии.';a.h1='Что такое MAP-упаковка и как она работает: технология, газы, оборудование и особенности применения';a.outline='H2: MAP-упаковка: что это такое простыми словами\\nH2: Как работает MAP\\nH2: CO₂, N₂ и O₂: роль газов\\nH2: Почему нет универсальной газовой смеси\\nH2: MAP для мяса, рыбы, сыра и готовых продуктов\\nH2: Какое оборудование используется\\nH2: MAP vs вакуум\\nH2: Ошибки\\nH2: Выбор оборудования\\nH2: FAQ\\nH2: Вывод';a.status='work';save();toast('SEO-план сформирован')}
 function addArticle(){
