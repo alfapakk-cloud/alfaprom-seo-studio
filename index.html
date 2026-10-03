@@ -64,6 +64,16 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
         <div class="field"><label>Проблема пользователя</label><textarea id="problem" oninput="updateField('problem',this.value)"></textarea></div>
         <div class="field"><label>К какому оборудованию вести</label><textarea id="equipment" oninput="updateField('equipment',this.value)"></textarea></div>
         <div class="field"><label>Внутренние ссылки</label><textarea id="links" oninput="updateField('links',this.value)"></textarea></div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+          <h3>Анализ целесообразности темы</h3>
+          <div class="muted small" style="margin-bottom:10px">На следующем этапе система автоматически сравнит тему с материалами блога АЛЬФАПРОМ и определит пересечения и риск каннибализации.</div>
+          <div class="two">
+            <div class="field"><label>Статус темы</label><select id="topicSuitability" onchange="updateField('topicSuitability',this.value)"><option value="">Не проверено</option><option>🟢 Рекомендуется</option><option>🟡 Требует переработки</option><option>🔴 Нецелесообразна</option></select></div>
+            <div class="field"><label>Риск каннибализации</label><select id="cannibalizationRisk" onchange="updateField('cannibalizationRisk',this.value)"><option value="">Не проверено</option><option>Низкий</option><option>Средний</option><option>Высокий</option></select></div>
+          </div>
+          <div class="field"><label>Найденные материалы блога</label><textarea id="existingBlogMaterials" placeholder="Здесь появятся существующие статьи, близкие по теме, URL и степень пересечения." oninput="updateField('existingBlogMaterials',this.value)"></textarea></div>
+          <div class="field"><label>Рекомендация по теме</label><textarea id="topicRecommendation" placeholder="Почему тему стоит писать, переработать или объединить с существующим материалом." oninput="updateField('topicRecommendation',this.value)"></textarea></div>
+        </div>
       </div>
     </div>
   </div>
@@ -188,7 +198,7 @@ function renderPlan(){
  document.getElementById('planTable').innerHTML=as.map(a=>`<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td class="right"><div class="actions" style="justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap"><button class="btn" onclick="refillArticle(${a.id})" title="Перезаполнить SEO-поля">↻</button><button class="btn" onclick="setCurrent(${a.id})">Открыть</button><button class="btn danger" onclick="deleteArticle(${a.id})">Удалить</button></div></td></tr>`).join('');
 }
 function renderArticle(){
- const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
+ const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
 }
 function refillArticle(id){
  const a=db.articles.find(x=>x.id===id);
