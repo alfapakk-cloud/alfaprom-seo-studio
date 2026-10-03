@@ -93,7 +93,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
       <h2>Редактор статьи</h2>
       <div class="muted" style="margin-bottom:10px">Вставьте готовый HTML статьи из ChatGPT или правьте его прямо здесь.</div>
       <div class="actions" style="margin-bottom:10px">
-        <button class="btn" onclick="document.getElementById('articleFileInput').click()">↓ Импортировать статью из файла</button><input id="articleFileInput" type="file" accept=".html,.htm,.txt,.md,text/html,text/plain,text/markdown" style="display:none" onchange="handleArticleFile(this.files[0])">
+        <button class="btn" onclick="importArticleFromFile()">↓ Импортировать статью из файла</button><input id="articleFileInput" type="file" accept=".html,.htm,.txt,.md,text/html,text/plain,text/markdown" class="hidden" onchange="handleArticleFile(this.files[0])">
         <button class="btn primary" onclick="saveArticleEdits()">💾 Сохранить правки</button>
       </div>
       <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea>
@@ -292,7 +292,28 @@ async function copyGenerationBrief(){
   toast('Не удалось скопировать автоматически');
  }
 }
-async 
+async function importArticleFromFile(){
+ const input=document.getElementById('articleFileInput');
+ if(input)input.click();
+}
+function handleArticleFile(file){
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=function(){
+  const html=String(reader.result||'');
+  if(!html.trim()){toast('Файл пуст');return}
+  const a=get();
+  a.content=html;
+  save(true);
+  renderArticle();
+  toast('Статья импортирована из файла');
+ };
+ reader.onerror=function(){
+  toast('Не удалось прочитать файл');
+ };
+ reader.readAsText(file);
+}
+
 function saveArticleEdits(){
  save();
  toast('Правки статьи сохранены');
