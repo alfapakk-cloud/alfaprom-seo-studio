@@ -91,8 +91,12 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
   <div id="tab-editor" class="hidden">
     <div class="card">
       <h2>Редактор статьи</h2>
-      <div class="muted" style="margin-bottom:10px">MVP хранит HTML. В будущей версии здесь подключается AI-генерация и блочный редактор.</div>
-      <textarea id="content" style="min-height:600px;font-family:ui-monospace,monospace" oninput="updateField('content',this.value)"></textarea>
+      <div class="muted" style="margin-bottom:10px">Вставьте готовый HTML статьи из ChatGPT или правьте его прямо здесь.</div>
+      <div class="actions" style="margin-bottom:10px">
+        <button class="btn" onclick="importArticleFromClipboard()">↓ Импортировать готовую статью</button>
+        <button class="btn primary" onclick="saveArticleEdits()">💾 Сохранить правки</button>
+      </div>
+      <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea>
     </div>
   </div>
 </section>
@@ -286,6 +290,23 @@ async function copyGenerationBrief(){
  }catch(e){
   toast('Не удалось скопировать автоматически');
  }
+}
+async function importArticleFromClipboard(){
+ try{
+  const html=await navigator.clipboard.readText();
+  if(!html.trim()){toast('Буфер обмена пуст');return}
+  const a=get();
+  a.content=html;
+  save(true);
+  renderArticle();
+  toast('Готовая статья импортирована');
+ }catch(e){
+  toast('Не удалось прочитать буфер обмена. Вставьте HTML вручную в редактор.');
+ }
+}
+function saveArticleEdits(){
+ save();
+ toast('Правки статьи сохранены');
 }
 function demoPlan(){
  const a=get();a.title='MAP-упаковка: что это такое, как работает и какое оборудование нужно';a.description='Что такое MAP-упаковка и как работает упаковка в модифицированной газовой среде. Разбираем газы, оборудование, применение и ограничения технологии.';a.h1='Что такое MAP-упаковка и как она работает: технология, газы, оборудование и особенности применения';a.outline='H2: MAP-упаковка: что это такое простыми словами\\nH2: Как работает MAP\\nH2: CO₂, N₂ и O₂: роль газов\\nH2: Почему нет универсальной газовой смеси\\nH2: MAP для мяса, рыбы, сыра и готовых продуктов\\nH2: Какое оборудование используется\\nH2: MAP vs вакуум\\nH2: Ошибки\\nH2: Выбор оборудования\\nH2: FAQ\\nH2: Вывод';a.status='work';save();toast('SEO-план сформирован')}
