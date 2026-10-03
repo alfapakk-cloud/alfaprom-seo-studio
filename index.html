@@ -40,7 +40,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
     <div class="stat"><span class="muted">В плане</span><b id="sPlan">0</b></div>
   </div>
   <div class="card">
-    <div class="top" style="margin-bottom:8px"><h2>Очередь SEO-статей</h2><div class="actions"><button class="btn" onclick="openImportPlan()">⇧ Загрузить SEO-план</button><button class="btn primary" onclick="addArticle()">＋ Добавить</button></div></div>
+    <div class="top" style="margin-bottom:8px"><h2>Очередь SEO-статей</h2><div class="actions"><button class="btn" onclick="importBlogIndex()">↓ Импорт текущих статей</button><button class="btn" onclick="openImportPlan()">⇧ Загрузить SEO-план</button><button class="btn primary" onclick="addArticle()">＋ Добавить</button></div></div><div class="small muted" style="margin-bottom:10px">База текущих статей: <b id="blogIndexStatus">не загружена</b></div>
     <table><thead><tr><th>#</th><th>Тема</th><th>Основной запрос</th><th>Кластер</th><th>Статус</th><th></th></tr></thead><tbody id="planTable"></tbody></table>
   </div>
 </section>
@@ -197,10 +197,49 @@ function statusLabel(s){return {plan:'В плане',work:'В работе',done
 function statusClass(s){return s==='done'?'done':s==='work'?'work':s==='research'?'blue':''}
 function renderPlan(){
  const as=db.articles; document.getElementById('sTotal').textContent=as.length;
+ const bi=document.getElementById('blogIndexStatus');
+ if(bi)bi.textContent=(db.blogIndex&&db.blogIndex.articles?db.blogIndex.articles.length:0)+' статей'+(db.blogIndex&&db.blogIndex.updatedAt?' · обновлено '+db.blogIndex.updatedAt:'');
  document.getElementById('sDone').textContent=as.filter(a=>a.status==='done').length;
  document.getElementById('sWork').textContent=as.filter(a=>a.status==='work').length;
  document.getElementById('sPlan').textContent=as.filter(a=>a.status==='plan').length;
  document.getElementById('planTable').innerHTML=as.map(a=>`<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td class="right"><div class="actions" style="justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap"><button class="btn" onclick="refillArticle(${a.id})" title="Перезаполнить SEO-поля">↻</button><button class="btn" onclick="setCurrent(${a.id})">Открыть</button><button class="btn danger" onclick="deleteArticle(${a.id})">Удалить</button></div></td></tr>`).join('');
+}
+async function importBlogIndex(){
+ const status=document.getElementById('blogIndexStatus');
+ if(status)status.textContent='загрузка...';
+ try{
+  const items=[];
+  const seen=new Set();
+  for(let page=1;page<=20;page++){
+   const url='https://alfaprom.org/blog/'+(page===1?'':'?page='+page);
+   const res=await fetch(url,{cache:'no-store'});
+   if(!res.ok)throw new Error('HTTP '+res.status);
+   const html=await res.text();
+   const doc=new DOMParser().parseFromString(html,'text/html');
+   let added=0;
+   doc.querySelectorAll('a[href]').forEach(link=>{
+    const href=link.getAttribute('href')||'';
+    const full=new URL(href,'https://alfaprom.org/').href;
+    if(!/^https:\/\/alfaprom\.org\/blog\/[^?]+\/$/.test(full))return;
+    if(seen.has(full))return;
+    const title=(link.textContent||'').trim().replace(/\s+/g,' ');
+    if(!title||title==='Блог')return;
+    seen.add(full);
+    items.push({title,url:full});
+    added++;
+   });
+   if(page>1&&added===0)break;
+  }
+  if(!items.length)throw new Error('Статьи не найдены');
+  db.blogIndex={updatedAt:new Date().toLocaleString('ru-RU'),articles:items};
+  save(true);
+  toast('Импортировано текущих статей: '+items.length);
+ }catch(e){
+  console.error(e);
+  if(status)status.textContent='ошибка загрузки';
+  toast('Не удалось импортировать статьи блога');
+ }
+ renderPlan();
 }
 function renderArticle(){
  const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
