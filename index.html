@@ -97,7 +97,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
         <button class="btn" onclick="importArticleFromFile()">↓ Импортировать статью из файла</button><input id="articleFileInput" type="file" accept=".html,.htm,.txt,.md,text/html,text/plain,text/markdown" class="hidden" onchange="handleArticleFile(this.files[0])">
         <button class="btn primary" onclick="saveArticleEdits()">💾 Сохранить правки</button>
       </div>
-      <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea>
+      <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea><div id="editorTextView" class="article hidden" style="max-width:none;min-height:700px;margin:0"></div>
     </div>
   </div>
 </section>
@@ -498,6 +498,7 @@ function handleArticleFile(file){
  reader.readAsText(file);
 }
 
+function setEditorMode(mode){const a=get();const htmlBtn=document.getElementById('editorHtmlBtn');const textBtn=document.getElementById('editorTextBtn');const area=document.getElementById('content');const view=document.getElementById('editorTextView');if(!area||!view)return;if(mode==='text'){area.classList.add('hidden');view.classList.remove('hidden');view.innerHTML=a.content||'<p>Статья пока пуста.</p>';htmlBtn.classList.remove('primary');textBtn.classList.add('primary')}else{view.classList.add('hidden');area.classList.remove('hidden');htmlBtn.classList.add('primary');textBtn.classList.remove('primary')}}
 function saveArticleEdits(){
  save();
  toast('Правки статьи сохранены');
