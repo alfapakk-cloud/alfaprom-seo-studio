@@ -207,12 +207,12 @@ function renderPlan(){
   const dupClass=d.status==='green'?'dup-green':d.status==='yellow'?'dup-yellow':d.status==='red'?'dup-red':'dup-gray';
   const dupLabel=d.status==='green'?'🟢 Можно писать':d.status==='yellow'?'🟡 Корректировать':d.status==='red'?'🔴 Уже есть':'— Не проверено';
   const note=d.best?'Ближайшая: '+d.best.title+' · '+d.best.score+'%':'';
-  return `<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td><span class="dup-status ${dupClass}">${dupLabel}</span><button class="btn dup-btn" onclick="runDuplicateCheck(${a.id})" title="Повторно проверить тему">Дубли?</button>${note?'<span class="small muted dup-note" title="'+attr(note)+'">'+esc(note)+'</span>':''}</td><td class="right"><div class="actions" style="justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap"><button class="btn" onclick="refillArticle(${a.id})" title="Перезаполнить SEO-поля">↻</button><button class="btn" onclick="setCurrent(${a.id})">Открыть</button><button class="btn danger" onclick="deleteArticle(${a.id})">Удалить</button></div></td></tr>`;
+  return `<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td><span class="dup-status ${dupClass}">${dupLabel}</span><button class="btn dup-btn" onclick="runDuplicateCheck(${a.id})" title="Проверить дубли">↻</button>${note?'<span class="small muted dup-note" title="'+attr(note)+'">'+esc(note)+'</span>':''}</td><td class="right"><div class="actions" style="justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap"><button class="btn" onclick="refillArticle(${a.id})" title="Перезаполнить SEO-поля">↻</button><button class="btn" onclick="setCurrent(${a.id})">Открыть</button><button class="btn danger" onclick="deleteArticle(${a.id})">Удалить</button></div></td></tr>`;
  }).join('');
 }
 function duplicateTokens(text){
  const stop=new Set('как что это это́ такое для при из на в во и или с со по от до а но не при выборе выбрать выбор оборудования оборудование производство производстве промышленный промышленного статья статьи обзор обзоры купить цена стоимость руководство применение технология технологии'.split(' '));
- return String(text||'').toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/gi,' ').trim().split(/\\s+/).map(x=>{
+ return String(text||'').toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/gi,' ').trim().split(/\s+/).map(x=>{
   x=x.replace(/(иями|ями|ами|ого|ему|ому|ими|ыми|ее|ие|ые|ов|ев|ей|ам|ям|ом|ем|ах|ях|ы|и|а|я|о|е|у|ю)$/,'');
   return x;
  }).filter(x=>x.length>2&&!stop.has(x));
@@ -350,6 +350,10 @@ async function importBlogIndex(){
    updatedAt:new Date().toLocaleString('ru-RU'),
    articles:items
   };
+  db.articles.forEach(a=>{
+   const d=getDuplicateCheck(a);
+   a.duplicateCheck={status:d.status,score:d.score,best:d.best,checkedAt:new Date().toISOString()};
+  });
   save(true);
 
   const finalStatus=document.getElementById('blogIndexStatus');
