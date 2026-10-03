@@ -105,7 +105,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 
 <section id="view-visuals" class="hidden">
   <div class="card">
-    <div class="top" style="margin-bottom:8px"><h2>Очередь визуалов</h2><button class="btn primary" onclick="createVisualPlan()">✦ Создать визуальный план</button></div>
+    <div class="top" style="margin-bottom:8px"><h2>Очередь визуалов</h2><button class="btn primary" onclick="addVisual()">＋ Визуал</button></div>
     <div id="visualList"></div>
   </div>
 </section>
@@ -219,74 +219,13 @@ function show(view){
  document.getElementById('pageTitle').textContent={plan:'SEO-план',article:'Статья',quality:'Quality Engine',visuals:'Визуалы',preview:'Предпросмотр',export:'Экспорт'}[view];
  renderAll();
 }
-function renderAll(){renderPlan();renderArticle();renderCriteria();renderVisuals();renderPreview();replaceVisualPlannerUI()}
+function renderAll(){renderPlan();renderArticle();renderCriteria();renderVisuals();renderPreview()}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('[id^=tab-]').forEach(x=>x.classList.add('hidden'));document.getElementById('tab-'+b.dataset.tab).classList.remove('hidden')});
 function toast(t){let e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(window._toast);window._toast=setTimeout(()=>e.style.display='none',1800)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function attr(s){return esc(s)}
 renderAll();
-\n
-/* === ALFAPROM VISUAL PLANNER v0.2 === */
-function articleReady(){
-  const a=get();
-  return !!(a.content && a.content.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().length>300 && a.status==='done');
-}
-function createVisualPlan(){
-  const a=get();
-  if(!a.content || a.content.replace(/<[^>]+>/g,' ').trim().length<300){
-    toast('Сначала нужно завершить статью'); return;
-  }
-  const tmp=document.createElement('div'); tmp.innerHTML=a.content;
-  const headings=[...tmp.querySelectorAll('h2,h3')];
-  const blocks=[...tmp.querySelectorAll('p,li')];
-  const candidates=[];
-  headings.forEach((h,idx)=>{
-    const title=h.textContent.trim();
-    if(!title) return;
-    const next=h.nextElementSibling;
-    const text=((next&&next.textContent)||'').trim();
-    const full=(title+' '+text).toLowerCase();
-    let type='Фотореалистичная сцена', purpose='Визуально показать ключевую тему раздела';
-    if(/как работает|принцип|процесс|этап|технолог|схем|устройств|механизм/.test(full)){
-      type='Техническая схема'; purpose='Наглядно объяснить принцип работы и последовательность процесса';
-    } else if(/сравн|отлич|выбор|вид|тип|вариант/.test(full)){
-      type='Сравнительная инфографика'; purpose='Визуально сравнить варианты и помочь читателю ориентироваться в выборе';
-    } else if(/оборудован|машин|аппарат|упаков|линия|станок/.test(full)){
-      type='Промышленная предметная фотография'; purpose='Показать оборудование и его применение в реальной производственной среде';
-    }
-    if(idx===0 || candidates.length<7) candidates.push({title,full,type,purpose});
-  });
-  const selected=candidates.filter((x,i)=>i===0 || /как работает|принцип|оборудован|выбор|сравн|примен|ошиб|этап|технолог/.test(x.full)).slice(0,7);
-  const count=Math.max(4,Math.min(7,selected.length));
-  const source=selected.length>=4?selected:selected.concat(Array.from({length:4-selected.length},(_,i)=>({title:'Практическая иллюстрация',full:'',type:'Редакционная визуализация',purpose:'Создать визуальную паузу и усилить практическую ценность материала'})));
-  a.visuals=source.slice(0,count).map((x,i)=>{
-    const safeTitle=x.title.replace(/[^a-zA-Zа-яА-Я0-9 ]/g,' ').trim();
-    const slug=(safeTitle||'visual').toLowerCase().replace(/[^a-zа-я0-9]+/gi,'-').replace(/^-|-$/g,'');
-    const product=a.equipment||a.topic||'оборудование пищевого производства';
-    const prompt='Профессиональная editorial-визуализация для премиального отраслевого журнала о пищевом производстве. Раздел статьи: "'+x.title+'". Тема статьи: "'+(a.topic||'')+'". Задача: '+x.purpose+'. Объект/технология: '+product+'. '+(x.type==='Техническая схема'?'Чистая техническая схема с понятной последовательностью процесса, без вымышленных технических характеристик.':'Фотореалистичная, профессиональная производственная сцена, современное чистое предприятие, реалистичные материалы и геометрия оборудования.')+' Без случайных логотипов, водяных знаков и лишнего текста в изображении. Горизонтальный формат 16:9, высокая детализация, журнальная подача.';
-    const alt=(x.type==='Техническая схема'?'Схема ':'Изображение ')+(safeTitle||a.topic||'технологического процесса');
-    return {id:Date.now()+i,n:i+1,section:x.title,title:x.title,purpose:x.purpose,type:x.type,prompt,alt,file:String(i+1).padStart(2,'0')+'-'+slug+'.webp',status:'todo'};
-  });
-  save(); show('visuals'); toast('Визуальный план создан');
-}
-function replaceVisualPlannerUI(){
-  const a=get();
-  const box=document.querySelector('#view-visuals .card');
-  if(!box) return;
-  const top=box.querySelector('.top');
-  if(top){
-    top.innerHTML='<div><h2>Очередь визуалов</h2><div class="muted">Визуалы создаются только после завершения статьи.</div></div><button class="btn primary" onclick="createVisualPlan()">✦ Создать визуальный план</button>';
-  }
-  const list=document.getElementById('visualList');
-  if(!list) return;
-  if(!a.content || a.content.replace(/<[^>]+>/g,' ').trim().length<300){
-    list.innerHTML='<div class="empty">Сначала сформируйте и завершите статью. После этого система автоматически определит места для визуалов.</div>'; return;
-  }
-  if(a.status!=='done' && (!a.visuals || !a.visuals.length)){
-    list.innerHTML='<div class="empty">Статья ещё не отмечена как готовая. После финальной проверки переведите её в статус «Готово».</div>'; return;
-  }
-}
-\n</script>
+</script>
 </body>
 </html>
