@@ -40,7 +40,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
     <div class="stat"><span class="muted">В плане</span><b id="sPlan">0</b></div>
   </div>
   <div class="card">
-    <div class="top" style="margin-bottom:8px"><h2>Очередь SEO-статей</h2><button class="btn primary" onclick="addArticle()">＋ Добавить</button></div>
+    <div class="top" style="margin-bottom:8px"><h2>Очередь SEO-статей</h2><div class="actions"><button class="btn" onclick="openImportPlan()">⇧ Загрузить SEO-план</button><button class="btn primary" onclick="addArticle()">＋ Добавить</button></div></div>
     <table><thead><tr><th>#</th><th>Тема</th><th>Основной запрос</th><th>Кластер</th><th>Статус</th><th></th></tr></thead><tbody id="planTable"></tbody></table>
   </div>
 </section>
@@ -131,6 +131,23 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 </section>
 </main>
 </div>
+<div id="importPlanModal" class="hidden" style="position:fixed;inset:0;background:#0008;z-index:20;padding:40px;overflow:auto">
+  <div class="card" style="max-width:900px;margin:40px auto">
+    <div class="top" style="margin-bottom:12px"><div><h2>Загрузка SEO-плана</h2><div class="muted">Вставьте список статей одним текстом. Максимум 10 статей за один раз.</div></div><button class="btn" onclick="closeImportPlan()">✕</button></div>
+    <div class="field">
+      <label>Список статей</label>
+      <textarea id="planImportText" style="min-height:300px" placeholder="Пример:
+1. Что такое MAP-упаковка
+2. Как выбрать трей-силер для мяса
+3. Вакуумная упаковка рыбы: оборудование и технология"></textarea>
+    </div>
+    <div class="small muted" style="margin-bottom:12px">Можно вставить обычный нумерованный список. Пустые строки и номера будут обработаны автоматически.</div>
+    <div class="actions">
+      <button class="btn primary" onclick="importPlan()">Создать очередь</button>
+      <button class="btn" onclick="closeImportPlan()">Отмена</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -219,6 +236,76 @@ function prepareGeneration(){
 }
 function demoPlan(){
  const a=get();a.title='MAP-упаковка: что это такое, как работает и какое оборудование нужно';a.description='Что такое MAP-упаковка и как работает упаковка в модифицированной газовой среде. Разбираем газы, оборудование, применение и ограничения технологии.';a.h1='Что такое MAP-упаковка и как она работает: технология, газы, оборудование и особенности применения';a.outline='H2: MAP-упаковка: что это такое простыми словами\\nH2: Как работает MAP\\nH2: CO₂, N₂ и O₂: роль газов\\nH2: Почему нет универсальной газовой смеси\\nH2: MAP для мяса, рыбы, сыра и готовых продуктов\\nH2: Какое оборудование используется\\nH2: MAP vs вакуум\\nH2: Ошибки\\nH2: Выбор оборудования\\nH2: FAQ\\nH2: Вывод';a.status='work';save();toast('SEO-план сформирован')}
+function openImportPlan(){document.getElementById('planImportText').value='';document.getElementById('importPlanModal').classList.remove('hidden')}
+function closeImportPlan(){document.getElementById('importPlanModal').classList.add('hidden')}
+function normalizePlanLine(line){
+ let s=String(line||'').trim();
+ s=s.replace(/^\s*(?:[-•*]|\d+[.)]|\d+\s*[—–-])\s*/,'').trim();
+ return s;
+}
+function inferCluster(topic){
+ const t=(topic||'').toLowerCase();
+ const map=[
+  [/map|модифицир|газов.*сред|атмосфер/,'MAP'],
+  [/вакуум/,'Вакуумная упаковка'],
+  [/термоформ|thermoform/,'Термоформование'],
+  [/трей.?сил|tray.?sealer|лоток|запай/,'Трей-силеры'],
+  [/котлет|формов/,'Формование'],
+  [/пельмен|jgl|тест/,'Пельмени и тесто'],
+  [/мяс|фарш|колбас/,'Мясопереработка'],
+  [/рыб|филе|кость/,'Рыбопереработка']
+ ];
+ for(const [re,name] of map)if(re.test(t))return name;
+ return 'Новый кластер';
+}
+function buildAutoSeo(topic){
+ const clean=topic.replace(/[.?!]+$/,'').trim();
+ const cluster=inferCluster(clean);
+ const keyword=clean.toLowerCase();
+ return {
+  topic:clean,
+  keyword,
+  cluster,
+  priority:'Средний',
+  status:'plan',
+  keywords:[clean,cluster,clean+' оборудование',clean+' технология',clean+' как выбрать'].join('\\n'),
+  intent:/как выбрать|оборудован|купить|цена|стоимость|подобрать/i.test(clean)?'Коммерческо-информационный':'Информационный',
+  problem:'Разобраться в теме, понять технологию и критерии выбора подходящего оборудования.',
+  equipment:'Определить подходящее оборудование после анализа технологии, продукта, производительности и требований к процессу.',
+  links:'Релевантные категории и карточки оборудования АЛЬФАПРОМ по теме статьи.',
+  title:clean+' — технология, оборудование и практические рекомендации',
+  description:'Разбираем '+clean.toLowerCase()+': принцип работы, применение, оборудование, критерии выбора и практические рекомендации.',
+  h1:clean+': технология, оборудование и практическое руководство',
+  outline:'H2: Что это такое и для чего применяется\\nH2: Как работает технология\\nH2: Где применяется\\nH2: Какое оборудование используется\\nH2: Как выбрать оборудование\\nH2: Типичные ошибки\\nH2: Практические рекомендации\\nH2: FAQ\\nH2: Вывод',
+  content:'<p>Статья будет сгенерирована на основе утверждённого SEO-задания и структуры.</p>',
+  criteria:Array(23).fill('warn'),
+  visuals:[],
+  scores:{seo:0,orig:0,fact:0}
+ };
+}
+function importPlan(){
+ const raw=document.getElementById('planImportText').value||'';
+ const lines=raw.split(/\\r?\\n/).map(normalizePlanLine).filter(Boolean);
+ if(!lines.length){toast('Вставьте список статей');return}
+ if(lines.length>10){toast('За один раз можно загрузить не более 10 статей');return}
+ const start=db.articles.length;
+ lines.forEach((line,i)=>{
+   const parts=line.split(/\\s*[|;]\\s*/).map(x=>x.trim()).filter(Boolean);
+   const topic=parts[0];
+   const a=buildAutoSeo(topic);
+   if(parts[1])a.keyword=parts[1];
+   if(parts[2])a.cluster=parts[2];
+   a.id=Date.now()+i;
+   a.number=start+i+1;
+   db.articles.push(a);
+ });
+ currentId=db.articles[db.articles.length-lines.length].id;
+ db.currentId=currentId;
+ save(true);
+ closeImportPlan();
+ show('plan');
+ toast('Добавлено статей: '+lines.length);
+}
 function addArticle(){
  let id=Date.now(), n=db.articles.length+1;db.articles.push({id,number:n,topic:'Новая SEO-статья',keyword:'',cluster:'',priority:'Средний',status:'plan',keywords:'',intent:'Информационный',problem:'',equipment:'',links:'',title:'',description:'',h1:'',outline:'',content:'<p>Начните с SEO-плана статьи.</p>',criteria:Array(23).fill('warn'),visuals:[],scores:{seo:0,orig:0,fact:0}});currentId=id;db.currentId=id;save();show('article')}
 function nextArticle(){let a=db.articles.find(x=>x.status!=='done');if(!a){toast('Все статьи готовы');return}currentId=a.id;db.currentId=a.id;save(true);show('article');toast('Открыта следующая статья')}
