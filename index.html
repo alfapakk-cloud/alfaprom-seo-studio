@@ -185,7 +185,7 @@ function renderPlan(){
  document.getElementById('sDone').textContent=as.filter(a=>a.status==='done').length;
  document.getElementById('sWork').textContent=as.filter(a=>a.status==='work').length;
  document.getElementById('sPlan').textContent=as.filter(a=>a.status==='plan').length;
- document.getElementById('planTable').innerHTML=as.map(a=>`<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td class="right"><button class="btn" onclick="setCurrent(${a.id})">Открыть</button></td></tr>`).join('');
+ document.getElementById('planTable').innerHTML=as.map(a=>`<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td class="right"><div class="actions" style="justify-content:flex-end"><button class="btn" onclick="setCurrent(${a.id})">Открыть</button><button class="btn danger" onclick="deleteArticle(${a.id})">Удалить</button></div></td></tr>`).join('');
 }
 function renderArticle(){
  const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
@@ -305,6 +305,20 @@ function importPlan(){
  closeImportPlan();
  show('plan');
  toast('Добавлено статей: '+lines.length);
+}
+function deleteArticle(id){
+ const index=db.articles.findIndex(a=>a.id===id);
+ if(index===-1)return;
+ const removed=db.articles[index];
+ if(!confirm('Удалить статью «'+removed.topic+'» из очереди?'))return;
+ db.articles.splice(index,1);
+ db.articles.forEach((a,i)=>a.number=i+1);
+ if(currentId===id){
+   currentId=db.articles.length?db.articles[Math.min(index,db.articles.length-1)].id:null;
+   db.currentId=currentId;
+ }
+ save();
+ toast('Статья удалена');
 }
 function addArticle(){
  let id=Date.now(), n=db.articles.length+1;db.articles.push({id,number:n,topic:'Новая SEO-статья',keyword:'',cluster:'',priority:'Средний',status:'plan',keywords:'',intent:'Информационный',problem:'',equipment:'',links:'',title:'',description:'',h1:'',outline:'',content:'<p>Начните с SEO-плана статьи.</p>',criteria:Array(23).fill('warn'),visuals:[],scores:{seo:0,orig:0,fact:0}});currentId=id;db.currentId=id;save();show('article')}
