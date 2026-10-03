@@ -206,40 +206,101 @@ function renderPlan(){
 }
 async function importBlogIndex(){
  const status=document.getElementById('blogIndexStatus');
- if(status)status.textContent='загрузка...';
+ const worker='https://alfaprom-seo-blog.alfapakk.workers.dev/index?page=';
+ const started=Date.now();
+ if(status)status.innerHTML='<span class="muted">Подготовка импорта...</span>';
  try{
   const items=[];
   const seen=new Set();
-  for(let page=1;page<=20;page++){
-   const url='https://alfaprom.org/blog/'+(page===1?'':'?page='+page);
-   const res=await fetch(url,{cache:'no-store'});
-   if(!res.ok)throw new Error('HTTP '+res.status);
-   const html=await res.text();
-   const doc=new DOMParser().parseFromString(html,'text/html');
+  let page=1;
+  let total=null;
+
+  while(true){
+   const res=await fetch(worker+page,{cache:'no-store'});
+   if(!res.ok)throw new Error('HTTP '+res.status+' · страница '+page);
+
+   const data=await res.json();
+   if(!data.ok)throw new Error(data.error||'Worker вернул ошибку · страница '+page);
+
+   if(Number.isFinite(Number(data.total))&&Number(data.total)>0){
+    total=Number(data.total);
+   }
+
+   const batch=Array.isArray(data.articles)?data.articles:[];
    let added=0;
-   doc.querySelectorAll('a[href]').forEach(link=>{
-    const href=link.getAttribute('href')||'';
-    const full=new URL(href,'https://alfaprom.org/').href;
-    if(!/^https:\/\/alfaprom\.org\/blog\/[^?]+\/$/.test(full))return;
-    if(seen.has(full))return;
-    const title=(link.textContent||'').trim().replace(/\s+/g,' ');
-    if(!title||title==='Блог')return;
-    seen.add(full);
-    items.push({title,url:full});
+
+   batch.forEach(item=>{
+    if(!item||!item.url||seen.has(item.url))return;
+    seen.add(item.url);
+    items.push({
+     title:String(item.title||'').trim(),
+     url:String(item.url),
+     category:String(item.category||'').trim()
+    });
     added++;
    });
-   if(page>1&&added===0)break;
+
+   const processed=items.length;
+   const elapsed=Date.now()-started;
+   const elapsedSec=Math.max(0.1,elapsed/1000);
+   const rate=processed/elapsedSec;
+   const percent=total?Math.min(100,Math.round(processed/total*100)):null;
+   const remaining=total?Math.max(0,total-processed):null;
+   const etaSec=total&&rate>0?Math.round(remaining/rate):null;
+
+   let eta='';
+   if(etaSec!==null){
+    eta=etaSec<60?' · осталось ~'+etaSec+' сек':' · осталось ~'+Math.ceil(etaSec/60)+' мин';
+   }
+
+   if(status){
+    status.innerHTML=
+     '<div><b>Проверено '+processed+(total?' из '+total:'')+
+     (percent!==null?' · '+percent+'%':'')+
+     '</b> · страница '+page+
+     ' · '+Math.round(elapsed/1000)+' сек'+eta+'</div>'+
+     '<div class="progress" style="margin-top:7px"><i style="width:'+(percent!==null?percent:12)+'%"></i></div>';
+   }
+
+   if(!batch.length){
+    break;
+   }
+
+   if(total&&processed>=total){
+    break;
+   }
+
+   if(batch.length<8){
+    break;
+   }
+
+   if(added===0){
+    throw new Error('Новые статьи не найдены на странице '+page+' — импорт остановлен');
+   }
+
+   page++;
   }
+
   if(!items.length)throw new Error('Статьи не найдены');
-  db.blogIndex={updatedAt:new Date().toLocaleString('ru-RU'),articles:items};
+
+  const elapsed=Math.round((Date.now()-started)/1000);
+  db.blogIndex={
+   updatedAt:new Date().toLocaleString('ru-RU'),
+   articles:items
+  };
   save(true);
+
+  const finalStatus=document.getElementById('blogIndexStatus');
+  if(finalStatus){
+   finalStatus.innerHTML='<b>Проверено '+items.length+' из '+items.length+' · 100%</b> · завершено за '+elapsed+' сек';
+  }
+
   toast('Импортировано текущих статей: '+items.length);
  }catch(e){
   console.error(e);
-  if(status)status.textContent='ошибка загрузки';
-  toast('Не удалось импортировать статьи блога');
+  if(status)status.innerHTML='<span style="color:var(--red)"><b>Импорт остановлен:</b> '+esc(e.message||e)+'</span>';
+  toast('Не удалось полностью импортировать статьи блога');
  }
- renderPlan();
 }
 function renderArticle(){
  const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
