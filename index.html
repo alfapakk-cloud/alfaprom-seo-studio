@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEO-Студия АЛЬФАПРОМ — MVP</title>
+<style>
+:root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.app{display:flex;min-height:100vh}.side{width:250px;background:#17191c;color:#fff;padding:18px 14px;position:fixed;inset:0 auto 0 0}.brand{font-weight:800;font-size:18px;padding:8px 10px 22px}.brand span{color:var(--orange)}.nav button{width:100%;border:0;background:transparent;color:#cbd0d5;text-align:left;padding:11px 12px;border-radius:8px;margin:2px 0}.nav button.active,.nav button:hover{background:#292d32;color:#fff}.main{margin-left:250px;width:calc(100% - 250px);padding:24px 28px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.top h1{margin:0;font-size:25px}.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:9px 13px}.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700}.btn.dark{background:#24282d;color:#fff;border-color:#24282d}.btn.danger{color:var(--red)}.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:0 1px 2px #00000008}.card h2,.card h3{margin:0 0 14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px}.stat b{font-size:25px;display:block}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse}th,td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:12px;color:var(--muted);text-transform:uppercase}.status{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;font-weight:700;background:#eef0f2}.status.done{background:#e7f6ed;color:var(--green)}.status.work{background:#fff3dc;color:var(--yellow)}.status.blue{background:#eaf1ff;color:var(--blue)}.field{margin-bottom:13px}.field label{display:block;font-weight:700;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:7px;padding:9px;background:#fff}.field textarea{min-height:100px;resize:vertical}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin-bottom:18px}.tabs button{border:0;background:transparent;padding:10px 13px;color:var(--muted);border-bottom:2px solid transparent}.tabs button.active{color:var(--text);border-color:var(--orange);font-weight:700}.hidden{display:none}.article{max-width:900px;margin:auto;background:#fff;padding:45px 58px;border:1px solid var(--line)}.article h1{font-size:34px;line-height:1.12}.article h2{font-size:24px;margin-top:34px}.article h3{font-size:18px;margin-top:25px}.article p{font-size:16px;line-height:1.7}.toc{background:#f7f8f9;border-left:4px solid var(--orange);padding:15px;margin:20px 0}.criterion{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.criterion .num{font-weight:800;color:var(--muted)}.check{font-size:12px;font-weight:700}.check.ok{color:var(--green)}.check.warn{color:var(--yellow)}.check.bad{color:var(--red)}.visual{border:1px solid var(--line);border-radius:8px;padding:13px;margin-bottom:10px}.visual .row{display:flex;justify-content:space-between;gap:10px}.progress{height:8px;background:#eceff1;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--orange)}.empty{padding:35px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:8px}.toast{position:fixed;right:22px;bottom:22px;background:#222;color:#fff;padding:11px 15px;border-radius:7px;display:none}.small{font-size:12px}.pill{border:1px solid var(--line);padding:4px 8px;border-radius:20px;background:#fafafa}.right{text-align:right}
+@media(max-width:900px){.side{position:static;width:100%;height:auto}.app{display:block}.main{margin:0;width:100%;padding:16px}.stats,.grid{grid-template-columns:1fr}.two{grid-template-columns:1fr}.article{padding:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">MVP · v0.1</div></div>
+  <div class="nav">
+    <button class="active" data-view="plan">▣ SEO-план</button>
+    <button data-view="article">✎ Статья</button>
+    <button data-view="quality">✓ Quality Engine</button>
+    <button data-view="visuals">▧ Визуалы</button>
+    <button data-view="preview">◉ Предпросмотр</button>
+    <button data-view="export">⇩ Экспорт</button>
+  </div>
+</aside>
+
+<main class="main">
+<div class="top">
+  <div><h1 id="pageTitle">SEO-план</h1><div class="muted">Конвейер создания статей АЛЬФАПРОМ</div></div>
+  <div class="actions"><button class="btn" onclick="save()">Сохранить</button><button class="btn primary" onclick="nextArticle()">▶ Следующая статья</button></div>
+</div>
+
+<section id="view-plan">
+  <div class="stats">
+    <div class="stat"><span class="muted">Всего статей</span><b id="sTotal">0</b></div>
+    <div class="stat"><span class="muted">Готово</span><b id="sDone">0</b></div>
+    <div class="stat"><span class="muted">В работе</span><b id="sWork">0</b></div>
+    <div class="stat"><span class="muted">В плане</span><b id="sPlan">0</b></div>
+  </div>
+  <div class="card">
+    <div class="top" style="margin-bottom:8px"><h2>Очередь SEO-статей</h2><button class="btn primary" onclick="addArticle()">＋ Добавить</button></div>
+    <table><thead><tr><th>#</th><th>Тема</th><th>Основной запрос</th><th>Кластер</th><th>Статус</th><th></th></tr></thead><tbody id="planTable"></tbody></table>
+  </div>
+</section>
+
+<section id="view-article" class="hidden">
+  <div class="tabs"><button class="active" data-tab="seo">SEO и стратегия</button><button data-tab="structure">Структура</button><button data-tab="editor">Редактор</button></div>
+  <div id="tab-seo">
+    <div class="grid">
+      <div class="card">
+        <h2>SEO-задание</h2>
+        <div class="field"><label>Тема</label><input id="topic" oninput="updateField('topic',this.value)"></div>
+        <div class="two">
+          <div class="field"><label>Основной запрос</label><input id="keyword" oninput="updateField('keyword',this.value)"></div>
+          <div class="field"><label>Кластер</label><input id="cluster" oninput="updateField('cluster',this.value)"></div>
+        </div>
+        <div class="field"><label>Дополнительные запросы</label><textarea id="keywords" oninput="updateField('keywords',this.value)"></textarea></div>
+        <div class="field"><label>Поисковый интент</label><select id="intent" onchange="updateField('intent',this.value)"><option>Информационный</option><option>Коммерческо-информационный</option><option>Коммерческий</option></select></div>
+      </div>
+      <div class="card">
+        <h2>Стратегия</h2>
+        <div class="field"><label>Проблема пользователя</label><textarea id="problem" oninput="updateField('problem',this.value)"></textarea></div>
+        <div class="field"><label>К какому оборудованию вести</label><textarea id="equipment" oninput="updateField('equipment',this.value)"></textarea></div>
+        <div class="field"><label>Внутренние ссылки</label><textarea id="links" oninput="updateField('links',this.value)"></textarea></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-structure" class="hidden">
+    <div class="card">
+      <h2>SEO-структура</h2>
+      <div class="field"><label>Title</label><input id="title" oninput="updateField('title',this.value)"></div>
+      <div class="field"><label>Description</label><textarea id="description" oninput="updateField('description',this.value)"></textarea></div>
+      <div class="field"><label>H1</label><input id="h1" oninput="updateField('h1',this.value)"></div>
+      <div class="field"><label>Структура H2/H3</label><textarea id="outline" style="min-height:250px" oninput="updateField('outline',this.value)"></textarea></div>
+      <div class="actions"><button class="btn primary" onclick="demoPlan()">⚙ Сформировать демо SEO-план</button><button class="btn" onclick="setStatus('work')">Перевести в генерацию</button></div>
+    </div>
+  </div>
+  <div id="tab-editor" class="hidden">
+    <div class="card">
+      <h2>Редактор статьи</h2>
+      <div class="muted" style="margin-bottom:10px">MVP хранит HTML. В будущей версии здесь подключается AI-генерация и блочный редактор.</div>
+      <textarea id="content" style="min-height:600px;font-family:ui-monospace,monospace" oninput="updateField('content',this.value)"></textarea>
+    </div>
+  </div>
+</section>
+
+<section id="view-quality" class="hidden">
+  <div class="grid">
+    <div class="card"><h2>23 критерия АЛЬФАПРОМ</h2><div id="criteria"></div></div>
+    <div>
+      <div class="card">
+        <h2>Quality Engine</h2>
+        <p class="muted">MVP-режим: базовые автоматические проверки + ручной статус. AI-фактчек и внешнее SEO-исследование подключаются через API на следующем этапе.</p>
+        <div class="field"><label>SEO Value</label><input type="range" min="0" max="100" id="seoScore" oninput="score('seo',this.value)"><b id="seoScoreV">—</b></div>
+        <div class="field"><label>Originality</label><input type="range" min="0" max="100" id="origScore" oninput="score('orig',this.value)"><b id="origScoreV">—</b></div>
+        <div class="field"><label>Fact Check</label><input type="range" min="0" max="100" id="factScore" oninput="score('fact',this.value)"><b id="factScoreV">—</b></div>
+        <div class="actions"><button class="btn primary" onclick="runQuality()">▶ Запустить проверку</button><button class="btn" onclick="markAll()">✓ Отметить пройденными</button></div>
+      </div>
+      <div class="card" style="margin-top:18px"><h3>Результат</h3><div id="qualityResult" class="empty">Проверка ещё не запускалась.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="view-visuals" class="hidden">
+  <div class="card">
+    <div class="top" style="margin-bottom:8px"><h2>Очередь визуалов</h2><button class="btn primary" onclick="addVisual()">＋ Визуал</button></div>
+    <div id="visualList"></div>
+  </div>
+</section>
+
+<section id="view-preview" class="hidden">
+  <div class="article" id="preview"></div>
+</section>
+
+<section id="view-export" class="hidden">
+  <div class="grid">
+    <div class="card">
+      <h2>Пакет публикации</h2>
+      <p class="muted">Сформируй HTML и SEO-файл. В полном MVP сюда добавится ZIP с WebP и DOCX.</p>
+      <div class="actions">
+        <button class="btn primary" onclick="downloadHTML()">⇩ article.html</button>
+        <button class="btn" onclick="downloadSEO()">⇩ SEO.txt</button>
+        <button class="btn" onclick="downloadJSON()">⇩ project.json</button>
+      </div>
+    </div>
+    <div class="card"><h2>Статус</h2><div id="exportStatus" class="empty">Пока не подготовлено.</div></div>
+  </div>
+</section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='alfaprom_seo_studio_mvp_v01';
+const criteria=[
+'Высокий поисковый потенциал','Большой экспертный материал','Фактическая точность','Проверка источников','SEO-ключи','SEO-структура','Внутренняя перелинковка','Оригинальность','Фотографии','Ненавязчивая коммерция','Целевой трафик → продажа','Без каннибализации','Практическая ценность','Экономика и расчёты','Варианты решений','Пошаговые алгоритмы','Практические чек-листы','Таблицы и сравнения','Реальный FAQ','Связь задачи с оборудованием','Экспертный вывод','E-E-A-T','Премиальное оформление текста'
+];
+let db=load();
+let currentId=db.currentId||null;
+
+function seed(){
+ return {currentId:1,articles:[{
+  id:1,number:1,topic:'Что такое MAP-упаковка и как она работает',keyword:'что такое MAP упаковка',cluster:'MAP',priority:'Высокий',status:'plan',
+  keywords:'модифицированная газовая среда\\nMAP упаковка мяса\\nMAP упаковка рыбы\\nгазовая смесь для MAP',
+  intent:'Коммерческо-информационный',problem:'Понять принцип MAP, ограничения технологии и подобрать подходящее оборудование.',equipment:'Трей-силеры MAP; термоформеры; упаковочные материалы.',
+  links:'Категория MAP / трей-силеры / вакуумная упаковка / термоформеры',
+  title:'MAP-упаковка: что это такое, как работает и какое оборудование нужно',
+  description:'Что такое MAP-упаковка и как работает упаковка в модифицированной газовой среде. Разбираем газы, оборудование, применение и ограничения технологии.',
+  h1:'Что такое MAP-упаковка и как она работает: технология, газы, оборудование и особенности применения',
+  outline:'H2: MAP-упаковка: что это такое простыми словами\\nH2: Как работает MAP\\nH2: Какие газы используются\\nH2: MAP для мяса, рыбы и сыра\\nH2: Какое оборудование нужно\\nH2: MAP vs вакуумная упаковка\\nH2: Ошибки при внедрении\\nH2: Как выбрать оборудование\\nH2: FAQ\\nH2: Вывод',
+  content:'<p>MAP-упаковка — это технология упаковки продукта в контролируемой модифицированной газовой среде. В этой статье разберём принцип работы технологии, роль газов, оборудование и практические ограничения.</p><h2>MAP-упаковка: что это такое простыми словами</h2><p>Вместо обычного воздуха внутри упаковки формируется заданная атмосфера. Её состав подбирают с учётом продукта, упаковочного материала и технологического процесса.</p><h2>Как работает MAP</h2><p>Процесс включает подготовку продукта, удаление или замещение воздуха, подачу газовой среды и герметичную запайку упаковки.</p><h2>Какое оборудование нужно</h2><p>Для MAP применяют различные типы оборудования. Выбор зависит от формата упаковки, производительности, продукта и требований к автоматизации.</p><h2>FAQ</h2><h3>Нужна ли MAP-упаковка каждому продукту?</h3><p>Нет. Целесообразность зависит от продукта, логистики, требований к сроку хранения и экономики процесса.</p>',
+  criteria:Array(23).fill('warn'),visuals:[],scores:{seo:0,orig:0,fact:0}
+ }]};
+}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||seed()}catch(e){return seed()}}
+function save(silent=false){localStorage.setItem(KEY,JSON.stringify(db));if(!silent)toast('Сохранено');renderAll()}
+function get(){return db.articles.find(a=>a.id===currentId)||db.articles[0]}
+function setCurrent(id){currentId=id;db.currentId=id;save(true);show('article')}
+function updateField(k,v){get()[k]=v;save(true)}
+function setStatus(s){get().status=s;save();toast('Статус изменён')}
+function statusLabel(s){return {plan:'В плане',work:'В работе',done:'Готово',research:'Исследование'}[s]||s}
+function statusClass(s){return s==='done'?'done':s==='work'?'work':s==='research'?'blue':''}
+function renderPlan(){
+ const as=db.articles; document.getElementById('sTotal').textContent=as.length;
+ document.getElementById('sDone').textContent=as.filter(a=>a.status==='done').length;
+ document.getElementById('sWork').textContent=as.filter(a=>a.status==='work').length;
+ document.getElementById('sPlan').textContent=as.filter(a=>a.status==='plan').length;
+ document.getElementById('planTable').innerHTML=as.map(a=>`<tr><td>${a.number}</td><td><b>${esc(a.topic)}</b><div class="small muted">${esc(a.priority||'')}</div></td><td>${esc(a.keyword)}</td><td>${esc(a.cluster)}</td><td><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></td><td class="right"><button class="btn" onclick="setCurrent(${a.id})">Открыть</button></td></tr>`).join('');
+}
+function renderArticle(){
+ const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
+}
+function renderCriteria(){
+ const a=get();document.getElementById('criteria').innerHTML=criteria.map((c,i)=>{let st=(a.criteria||[])[i]||'warn';let cl=st==='ok'?'ok':st==='bad'?'bad':'warn';let label=st==='ok'?'Пройдено':st==='bad'?'Проблема':'Проверить';return `<div class="criterion"><div class="num">${String(i+1).padStart(2,'0')}</div><div>${c}</div><button class="btn small" onclick="toggleCriterion(${i})"><span class="check ${cl}">${label}</span></button></div>`}).join('');
+}
+function toggleCriterion(i){let a=get();a.criteria[i]=a.criteria[i]==='ok'?'warn':'ok';save(true);renderCriteria()}
+function markAll(){get().criteria=Array(23).fill('ok');save();toast('Все критерии отмечены пройденными')}
+function score(k,v){get().scores[k]=+v;document.getElementById(k==='seo'?'seoScoreV':k==='orig'?'origScoreV':'factScoreV').textContent=v+' / 100';save(true)}
+function runQuality(){
+ const a=get(), txt=(a.content||'');
+ let checks=[
+ txt.length>2500, txt.includes('<h2>'), txt.length>500,
+ !!a.description, !!a.title, !!a.h1, !!a.links, txt.includes('<h3>'),
+ txt.includes('FAQ'), txt.includes('<p>'), (a.visuals||[]).length>=4,
+ a.equipment.length>10, txt.includes('<ol>')||txt.includes('<ul>'), txt.includes('<h2>'),
+ a.keywords.length>10, a.outline.length>30, txt.includes('<table>')
+ ];
+ a.criteria=criteria.map((_,i)=>checks[i%checks.length]?'ok':'warn');
+ a.scores={seo:Math.min(100,Math.round((txt.length/5000)*70+30)),orig:Math.min(100,Math.round((txt.length/4000)*60+30)),fact:50};
+ save(true);renderCriteria();document.getElementById('qualityResult').innerHTML=`<div><b>Базовая MVP-проверка завершена.</b></div><p class="muted">Это пока структурный pre-check. Реальный фактчек, проверка поисковой выдачи и семантическая оригинальность подключаются к AI/API на следующем этапе.</p><div class="progress"><i style="width:${a.scores.seo}%"></i></div><p>SEO completeness: <b>${a.scores.seo}/100</b></p>`;toast('Проверка завершена')}
+function demoPlan(){
+ const a=get();a.title='MAP-упаковка: что это такое, как работает и какое оборудование нужно';a.description='Что такое MAP-упаковка и как работает упаковка в модифицированной газовой среде. Разбираем газы, оборудование, применение и ограничения технологии.';a.h1='Что такое MAP-упаковка и как она работает: технология, газы, оборудование и особенности применения';a.outline='H2: MAP-упаковка: что это такое простыми словами\\nH2: Как работает MAP\\nH2: CO₂, N₂ и O₂: роль газов\\nH2: Почему нет универсальной газовой смеси\\nH2: MAP для мяса, рыбы, сыра и готовых продуктов\\nH2: Какое оборудование используется\\nH2: MAP vs вакуум\\nH2: Ошибки\\nH2: Выбор оборудования\\nH2: FAQ\\nH2: Вывод';a.status='work';save();toast('SEO-план сформирован')}
+function addArticle(){
+ let id=Date.now(), n=db.articles.length+1;db.articles.push({id,number:n,topic:'Новая SEO-статья',keyword:'',cluster:'',priority:'Средний',status:'plan',keywords:'',intent:'Информационный',problem:'',equipment:'',links:'',title:'',description:'',h1:'',outline:'',content:'<p>Начните с SEO-плана статьи.</p>',criteria:Array(23).fill('warn'),visuals:[],scores:{seo:0,orig:0,fact:0}});currentId=id;db.currentId=id;save();show('article')}
+function nextArticle(){let a=db.articles.find(x=>x.status!=='done');if(!a){toast('Все статьи готовы');return}currentId=a.id;db.currentId=a.id;save(true);show('article');toast('Открыта следующая статья')}
+function addVisual(){
+ const a=get();a.visuals=a.visuals||[];let n=a.visuals.length+1;a.visuals.push({id:Date.now(),n,title:'Новый визуал',purpose:'Объяснить ключевую мысль раздела',type:'Editorial / technical',prompt:'Премиальная технологическая визуализация для международного журнала о пищевой промышленности, формат 16:9. ',alt:'',file:`${String(n).padStart(2,'0')}-visual.webp`,status:'todo'});save();show('visuals')}
+function renderVisuals(){
+ const a=get();let vs=a.visuals||[];document.getElementById('visualList').innerHTML=vs.length?vs.map((v,i)=>`<div class="visual"><div class="row"><b>Изображение ${String(v.n).padStart(2,'0')} · ${esc(v.title)}</b><span class="status ${v.status==='approved'?'done':'work'}">${v.status==='approved'?'Утверждено':'Ожидает'}</span></div><div class="two" style="margin-top:10px"><div class="field"><label>Назначение</label><input value="${attr(v.purpose)}" onchange="visualField(${i},'purpose',this.value)"></div><div class="field"><label>Тип</label><input value="${attr(v.type)}" onchange="visualField(${i},'type',this.value)"></div></div><div class="field"><label>Промпт</label><textarea onchange="visualField(${i},'prompt',this.value)">${esc(v.prompt)}</textarea></div><div class="two"><div class="field"><label>ALT</label><input value="${attr(v.alt)}" onchange="visualField(${i},'alt',this.value)"></div><div class="field"><label>Файл</label><input value="${attr(v.file)}" onchange="visualField(${i},'file',this.value)"></div></div><div class="actions"><button class="btn primary" onclick="approveVisual(${i})">✓ Утвердить</button><button class="btn danger" onclick="deleteVisual(${i})">Удалить</button></div></div>`).join(''):'<div class="empty">Визуалов пока нет. Добавьте первый визуал.</div>'}
+function visualField(i,k,v){get().visuals[i][k]=v;save(true)}
+function approveVisual(i){get().visuals[i].status='approved';save();toast('Визуал утверждён и привязан к статье')}
+function deleteVisual(i){get().visuals.splice(i,1);save()}
+function renderPreview(){
+ const a=get();let visualHtml=(a.visuals||[]).filter(v=>v.status==='approved').map(v=>`<figure style="margin:25px 0"><div style="background:#f1f3f5;padding:55px;text-align:center;color:#777;border-radius:7px">УТВЕРЖДЁННЫЙ ВИЗУАЛ<br><small>${esc(v.file)}</small></div><figcaption>${esc(v.alt||v.title)}</figcaption></figure>`).join('');
+ let html=a.content||'<p>Статья пока пуста.</p>';html=html.replace(/<h2>/g,'<h2>').replace(/<\/p>\s*(?=<h2>)/g,'</p>');document.getElementById('preview').innerHTML=`<div class="muted">${esc(a.cluster||'SEO-статья')}</div><h1>${esc(a.h1||a.topic)}</h1><p class="muted">${esc(a.description||'')}</p><div class="toc"><b>Содержание</b><div>${(a.outline||'').split('\\n').map(x=>esc(x)).join('<br>')}</div></div>${html}${visualHtml}<hr><p><b>Экспертный вывод</b></p><p>Финальная версия должна пройти 23 критерия АЛЬФАПРОМ, фактчек и визуальную проверку.</p>`}
+function htmlExport(){
+ const a=get();return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(a.title)}</title><meta name="description" content="${attr(a.description)}"></head><body><article><h1>${esc(a.h1||a.topic)}</h1>${a.content||''}</article></body></html>`;
+}
+function download(name,text,type='text/plain'){let b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+function downloadHTML(){download('article.html',htmlExport(),'text/html');document.getElementById('exportStatus').innerHTML='<b>HTML сформирован.</b><p class="muted">В следующей версии сюда добавим реальные изображения и ZIP-пакет.</p>'}
+function downloadSEO(){let a=get();download('SEO.txt',`TITLE: ${a.title}\\nDESCRIPTION: ${a.description}\\nURL: /blog/${slug(a.topic)}/\\nH1: ${a.h1}\\n\\nОСНОВНОЙ ЗАПРОС: ${a.keyword}\\nДОПОЛНИТЕЛЬНЫЕ: ${a.keywords}\\nКЛАСТЕР: ${a.cluster}\\n\\nВНУТРЕННИЕ ССЫЛКИ:\\n${a.links}`);document.getElementById('exportStatus').innerHTML='<b>SEO.txt сформирован.</b>'}
+function downloadJSON(){download('project.json',JSON.stringify(db,null,2),'application/json');document.getElementById('exportStatus').innerHTML='<b>Проект сохранён в JSON.</b>'}
+function slug(s){return (s||'article').toLowerCase().replace(/[^a-zа-я0-9]+/gi,'-').replace(/^-|-$/g,'')}
+function show(view){
+ document.querySelectorAll('[id^=view-]').forEach(x=>x.classList.add('hidden'));document.getElementById('view-'+view).classList.remove('hidden');
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+ document.getElementById('pageTitle').textContent={plan:'SEO-план',article:'Статья',quality:'Quality Engine',visuals:'Визуалы',preview:'Предпросмотр',export:'Экспорт'}[view];
+ renderAll();
+}
+function renderAll(){renderPlan();renderArticle();renderCriteria();renderVisuals();renderPreview()}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('[id^=tab-]').forEach(x=>x.classList.add('hidden'));document.getElementById('tab-'+b.dataset.tab).classList.remove('hidden')});
+function toast(t){let e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(window._toast);window._toast=setTimeout(()=>e.style.display='none',1800)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function attr(s){return esc(s)}
+renderAll();
+</script>
+</body>
+</html>
