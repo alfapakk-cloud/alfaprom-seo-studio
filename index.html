@@ -292,17 +292,16 @@ async function copyGenerationBrief(){
  }
 }
 async function importArticleFromClipboard(){
- try{
-  const html=await navigator.clipboard.readText();
+ navigator.clipboard.readText().then(function(html){
   if(!html.trim()){toast('Буфер обмена пуст');return}
   const a=get();
   a.content=html;
   save(true);
   renderArticle();
   toast('Готовая статья импортирована');
- }catch(e){
+ }).catch(function(){
   toast('Не удалось прочитать буфер обмена. Вставьте HTML вручную в редактор.');
- }
+ });
 }
 function saveArticleEdits(){
  save();
