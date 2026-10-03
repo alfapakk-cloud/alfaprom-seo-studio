@@ -229,13 +229,27 @@ function runQuality(){
  save(true);renderCriteria();document.getElementById('qualityResult').innerHTML=`<div><b>Базовая MVP-проверка завершена.</b></div><p class="muted">Это пока структурный pre-check. Реальный фактчек, проверка поисковой выдачи и семантическая оригинальность подключаются к AI/API на следующем этапе.</p><div class="progress"><i style="width:${a.scores.seo}%"></i></div><p>SEO completeness: <b>${a.scores.seo}/100</b></p>`;toast('Проверка завершена')}
 function prepareGeneration(){
  const a=get();
+ const qualityRequirements=criteria.filter(c=>c!=='Фотографии');
+ const editorialRestrictions=[
+  'Не писать ради объёма и не повторять одну мысль разными словами.',
+  'Не использовать шаблонные AI-фразы, бюрократический язык и пустые вводные абзацы.',
+  'Не придумывать характеристики оборудования, цифры, нормативы, цены, источники или результаты исследований.',
+  'Не выдавать предположение за установленный технический факт.',
+  'Не превращать информационную статью в рекламную страницу.',
+  'Не вставлять оборудование в каждый раздел искусственно.',
+  'Не использовать ключевые слова механически ради SEO.',
+  'Не давать общие банальные советы вместо конкретного содержания.',
+  'Если данных недостаточно для достоверного утверждения — явно отметить необходимость проверки.'
+ ];
  const brief={
-  context:'АЛЬФАПРОМ — экспертный B2B-материал о пищевом и упаковочном оборудовании.',
+  context:{company:'АЛЬФАПРОМ',expertise:'пищевое и упаковочное оборудование',format:'экспертный B2B-материал'},
   seo:{topic:a.topic,primaryQuery:a.keyword,additionalQueries:a.keywords,cluster:a.cluster,intent:a.intent},
   userTask:{problem:a.problem,equipment:a.equipment,internalLinks:a.links},
   meta:{title:a.title,description:a.description,h1:a.h1},
   structure:a.outline,
-  criteria:criteria,
+  research:{facts:[],sources:[],technicalData:[],factsToVerify:[]},
+  qualityRequirements,
+  editorialRestrictions,
   style:[
    'Короткие читаемые абзацы.',
    'Сильные H2/H3 и логичная композиция.',
@@ -244,13 +258,23 @@ function prepareGeneration(){
    'Премиальная подача профессионального журнала об оборудовании.',
    'Коммерческая часть ненавязчивая и преимущественно в конце.'
   ],
-  output:'Полноценная экспертная SEO-статья по утверждённой структуре. Не выдумывать характеристики, цифры, источники или рекомендации. Если данных недостаточно — явно отметить, что требуется проверка.'
+  output:{
+   format:'HTML',
+   language:'ru',
+   rules:[
+    'Готовое содержимое статьи по утверждённой структуре.',
+    'Не включать <html>, <head> или <body>.',
+    'Не использовать Markdown.',
+    'Использовать корректные H2/H3, списки, таблицы и абзацы там, где они нужны.',
+    'Вернуть только готовый контент статьи.'
+   ]
+  }
  };
  a.generationBrief=brief;
  a.status='work';
  save(true);
  const e=document.getElementById('generationBrief');
- e.innerHTML='<h3>Генерационное задание подготовлено</h3><p class="muted">В бриф вошли SEO-данные, структура, все 23 критерия АЛЬФАПРОМ и редакционные требования.</p><pre style="white-space:pre-wrap;max-height:420px;overflow:auto;background:#fff;border:1px solid var(--line);padding:12px;border-radius:7px">'+esc(JSON.stringify(brief,null,2))+'</pre><div class="small muted">Следующий шаг — подключить этот бриф к реальному AI-генератору. API-ключ в GitHub Pages не размещаем.</div>';
+ e.innerHTML='<h3>Генерационное задание подготовлено</h3><p class="muted">В бриф вошли SEO-данные, структура, исследовательские данные, требования к качеству и редакционные ограничения. Визуалы будут отдельным этапом.</p><pre style="white-space:pre-wrap;max-height:420px;overflow:auto;background:#fff;border:1px solid var(--line);padding:12px;border-radius:7px">'+esc(JSON.stringify(brief,null,2))+'</pre><div class="small muted">Следующий шаг — подключить этот бриф к реальному AI-генератору. API-ключ в GitHub Pages не размещаем.</div>';
  toast('Генерационный бриф подготовлен');
 }
 function demoPlan(){
