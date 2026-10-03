@@ -285,12 +285,12 @@ function buildAutoSeo(topic){
 }
 function importPlan(){
  const raw=document.getElementById('planImportText').value||'';
- const lines=raw.split(/\\r?\\n/).map(normalizePlanLine).filter(Boolean);
+ const lines=raw.split(/\r?\n/).map(normalizePlanLine).filter(Boolean);
  if(!lines.length){toast('Вставьте список статей');return}
  if(lines.length>20){toast('За один раз можно загрузить не более 20 статей');return}
  const start=db.articles.length;
  lines.forEach((line,i)=>{
-   const parts=line.split(/\\s*[|;]\\s*/).map(x=>x.trim()).filter(Boolean);
+   const parts=line.split(/\s*[|;]\s*/).map(x=>x.trim()).filter(Boolean);
    const topic=parts[0];
    const a=buildAutoSeo(topic);
    if(parts[1])a.keyword=parts[1];
