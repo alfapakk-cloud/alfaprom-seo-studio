@@ -93,7 +93,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
       <h2>Редактор статьи</h2>
       <div class="muted" style="margin-bottom:10px">Вставьте готовый HTML статьи из ChatGPT или правьте его прямо здесь.</div>
       <div class="actions" style="margin-bottom:10px">
-        <button class="btn" onclick="importArticleFromClipboard()">↓ Импортировать готовую статью</button>
+        <button class="btn" onclick="importArticleFromFile()">↓ Импортировать статью из файла</button><input id="articleFileInput" type="file" accept=".html,.htm,.txt,.md,text/html,text/plain,text/markdown" class="hidden" onchange="handleArticleFile(this.files[0])">
         <button class="btn primary" onclick="saveArticleEdits()">💾 Сохранить правки</button>
       </div>
       <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea>
@@ -162,19 +162,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
     </div>
   </div>
 </div>
-<div id="articleImportModal" class="hidden" style="position:fixed;inset:0;background:#0008;z-index:21;padding:40px;overflow:auto">
-  <div class="card" style="max-width:1000px;margin:40px auto">
-    <div class="top" style="margin-bottom:12px"><div><h2>Импорт готовой статьи</h2><div class="muted">Вставьте HTML статьи из ChatGPT через ⌘V / Ctrl+V.</div></div><button class="btn" onclick="closeArticleImport()">✕</button></div>
-    <div class="field">
-      <label>HTML статьи</label>
-      <textarea id="articleImportText" style="width:100%;min-height:500px;font-family:ui-monospace,monospace;resize:vertical" placeholder="Вставьте сюда готовый HTML статьи"></textarea>
-    </div>
-    <div class="actions">
-      <button class="btn primary" onclick="importArticleText()">Импортировать</button>
-      <button class="btn" onclick="closeArticleImport()">Отмена</button>
-    </div>
-  </div>
-</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -304,28 +292,26 @@ async function copyGenerationBrief(){
   toast('Не удалось скопировать автоматически');
  }
 }
-async function importArticleFromClipboard(){
- const m=document.getElementById('articleImportModal');
- const t=document.getElementById('articleImportText');
- if(!m||!t)return;
- t.value='';
- m.classList.remove('hidden');
- setTimeout(function(){t.focus()},50);
+async function importArticleFromFile(){
+ const input=document.getElementById('articleFileInput');
+ if(input)input.click();
 }
-function closeArticleImport(){
- const m=document.getElementById('articleImportModal');
- if(m)m.classList.add('hidden');
-}
-function importArticleText(){
- const t=document.getElementById('articleImportText');
- const html=t?t.value:'';
- if(!html.trim()){toast('Вставьте HTML статьи');return}
- const a=get();
- a.content=html;
- save(true);
- renderArticle();
- closeArticleImport();
- toast('Готовая статья импортирована');
+function handleArticleFile(file){
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=function(){
+  const html=String(reader.result||'');
+  if(!html.trim()){toast('Файл пуст');return}
+  const a=get();
+  a.content=html;
+  save(true);
+  renderArticle();
+  toast('Статья импортирована из файла');
+ };
+ reader.onerror=function(){
+  toast('Не удалось прочитать файл');
+ };
+ reader.readAsText(file);
 }
 
 function saveArticleEdits(){
