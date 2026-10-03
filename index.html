@@ -194,7 +194,7 @@ function get(){return db.articles.find(a=>a.id===currentId)||db.articles[0]}
 function setCurrent(id){currentId=id;db.currentId=id;save(true);show('article')}
 function updateField(k,v){get()[k]=v;save(true)}
 function setStatus(s){get().status=s;save();toast('Статус изменён')}
-function statusLabel(s){return {plan:'В плане',work:'В работе',done:'Готово',research:'Исследование'}[s]||s}
+function statusLabel(s){return {plan:'В плане',work:'В работе',done:'Готово'}[s]||'В плане'}
 function statusClass(s){return s==='done'?'done':s==='work'?'work':s==='research'?'blue':''}
 function renderPlan(){
  const as=db.articles; document.getElementById('sTotal').textContent=as.length;
