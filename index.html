@@ -133,7 +133,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 </div>
 <div id="importPlanModal" class="hidden" style="position:fixed;inset:0;background:#0008;z-index:20;padding:40px;overflow:auto">
   <div class="card" style="max-width:900px;margin:40px auto">
-    <div class="top" style="margin-bottom:12px"><div><h2>Загрузка SEO-плана</h2><div class="muted">Вставьте список статей одним текстом. Максимум 10 статей за один раз.</div></div><button class="btn" onclick="closeImportPlan()">✕</button></div>
+    <div class="top" style="margin-bottom:12px"><div><h2>Загрузка SEO-плана</h2><div class="muted">Вставьте список статей одним текстом. Можно загрузить до 20 статей одним списком.</div></div><button class="btn" onclick="closeImportPlan()">✕</button></div>
     <div class="field">
       <label>Список статей</label>
       <textarea id="planImportText" style="min-height:300px" placeholder="Пример:
@@ -287,7 +287,7 @@ function importPlan(){
  const raw=document.getElementById('planImportText').value||'';
  const lines=raw.split(/\\r?\\n/).map(normalizePlanLine).filter(Boolean);
  if(!lines.length){toast('Вставьте список статей');return}
- if(lines.length>10){toast('За один раз можно загрузить не более 10 статей');return}
+ if(lines.length>20){toast('За один раз можно загрузить не более 20 статей');return}
  const start=db.articles.length;
  lines.forEach((line,i)=>{
    const parts=line.split(/\\s*[|;]\\s*/).map(x=>x.trim()).filter(Boolean);
