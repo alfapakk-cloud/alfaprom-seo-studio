@@ -373,20 +373,23 @@ function renderArticle(){
  const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
 }
 function setEditorMode(mode){
- const html=document.getElementById('content');
- if(!html)return;
+ const a=get();
+ const htmlBtn=document.getElementById('editorHtmlBtn');
+ const textBtn=document.getElementById('editorTextBtn');
+ const area=document.getElementById('content');
+ const view=document.getElementById('editorTextView');
+ if(!area||!view)return;
  if(mode==='text'){
-  html.style.fontFamily='inherit';
-  html.style.fontSize='16px';
-  html.style.lineHeight='1.6';
-  document.getElementById('editorTextBtn').classList.add('primary');
-  document.getElementById('editorHtmlBtn').classList.remove('primary');
+  area.classList.add('hidden');
+  view.classList.remove('hidden');
+  view.innerHTML=a.content||'<p>Статья пока пуста.</p>';
+  htmlBtn.classList.remove('primary');
+  textBtn.classList.add('primary');
  }else{
-  html.style.fontFamily='ui-monospace,monospace';
-  html.style.fontSize='14px';
-  html.style.lineHeight='normal';
-  document.getElementById('editorHtmlBtn').classList.add('primary');
-  document.getElementById('editorTextBtn').classList.remove('primary');
+  view.classList.add('hidden');
+  area.classList.remove('hidden');
+  htmlBtn.classList.add('primary');
+  textBtn.classList.remove('primary');
  }
 }
 function refillArticle(id){
