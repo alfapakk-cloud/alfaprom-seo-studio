@@ -383,6 +383,8 @@ function renderEditorTextView(){
   html=t.value;
  }
  view.innerHTML=html||'<p>Статья пока пуста.</p>';
+ view.contentEditable='true';
+ view.oninput=function(){a.content=view.innerHTML;save(true)};
 }
 function setEditorMode(mode){
  const htmlBtn=document.getElementById('editorHtmlBtn');
@@ -391,14 +393,14 @@ function setEditorMode(mode){
  const view=document.getElementById('editorTextView');
  if(!area||!view)return;
  if(mode==='text'){
-  area.classList.add('hidden');
-  view.classList.remove('hidden');
   renderEditorTextView();
+  area.style.display='none';
+  view.style.display='block';
   htmlBtn.classList.remove('primary');
   textBtn.classList.add('primary');
  }else{
-  view.classList.add('hidden');
-  area.classList.remove('hidden');
+  area.style.display='block';
+  view.style.display='none';
   htmlBtn.classList.add('primary');
   textBtn.classList.remove('primary');
  }
