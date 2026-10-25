@@ -35,6 +35,7 @@ class HelperTests(unittest.TestCase):
         def fake_process(command, **kwargs):
             self.assertIn('--ignore-user-config', command)
             self.assertIn('--ephemeral', command)
+            self.assertIn('--json', command)
             self.assertIn('forced_login_method="chatgpt"', command)
             self.assertIn('read-only', command)
             self.assertIn('features.shell_tool=false', command)
@@ -57,7 +58,38 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 2})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 3})])
+
+    def test_progress_contains_no_article_or_account_data(self):
+        helper.set_progress('progress-test', 'generating')
+        data = helper.progress_snapshot('progress-test')
+        self.assertEqual(set(data), {'stage', 'elapsed'})
+        self.assertEqual(data['stage'], 'generating')
+        self.assertGreaterEqual(data['elapsed'], 0)
+
+    def test_unknown_job_is_only_connecting(self):
+        self.assertEqual(helper.progress_snapshot('unknown-job'), {'stage': 'connecting', 'elapsed': 0})
+
+    def test_event_stream_reports_stages_without_forwarding_text(self):
+        import tempfile
+        import threading
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'events.jsonl'
+            path.write_text('{"type":"turn.started"}\n{"type":"item.completed","item":{"text":"PRIVATE"}}\n{"type":"turn.completed"}\n', encoding='utf-8')
+            stop = threading.Event()
+            def after_read(_):
+                stop.set()
+            with patch.object(stop, 'wait', side_effect=after_read):
+                helper.watch_events(path, 'stream-test', stop)
+            self.assertEqual(helper.progress_snapshot('stream-test')['stage'], 'validating')
+            self.assertNotIn('PRIVATE', str(helper.PROGRESS))
+
+    def test_cancel_before_generation_does_not_start_codex(self):
+        helper.CANCELLED.add('cancelled-before-start')
+        with patch.object(helper, 'codex_binary', return_value='codex'), patch.object(helper, 'require_chatgpt'), patch.object(helper.subprocess, 'Popen') as process:
+            with self.assertRaisesRegex(ValueError, 'остановлена'):
+                helper.execute_revision('test', 'cancelled-before-start')
+            process.assert_not_called()
 
     def test_native_shutdown_stops_active_generation(self):
         helper.ACTIVE['test-active-job'] = SimpleNamespace(pid=999999, poll=lambda: None)

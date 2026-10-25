@@ -13,6 +13,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 @media(max-width:1150px){#view-quality .qe-layout{display:flex;flex-direction:column}#view-quality .qe-layout>.qe-stack{display:contents}#view-quality .qe-layout>.qe-stack>.card{width:100%}#view-quality .qe-controls{order:-3}#view-quality .qe-outcome{order:-2}#view-quality .qe-decision{order:2}#view-quality .qe-sticky{position:static}}
 @media(max-width:600px){#view-quality .qe-metrics{grid-template-columns:repeat(2,1fr)}#view-quality .qe-panel{padding:16px}#view-quality .qe-heading{display:block}#view-quality .qe-row summary{flex-wrap:wrap}#view-quality .qe-row summary>span:nth-child(2){flex-basis:70%}#view-quality .qe-row .qe-badge{margin-left:32px}#view-quality .qe-detail{padding-left:0}}
 @media(max-width:900px){.side{position:static;width:100%;height:auto}.app{display:block}.main{margin:0;width:100%;padding:16px}.stats,.grid{grid-template-columns:1fr}.two{grid-template-columns:1fr}.article{padding:25px}}
+
+#view-quality .qe-helper-status{margin:14px 0 10px;padding:12px 15px;background:#f1f3f6;border-radius:8px;font-size:13px;line-height:1.6}#view-quality .qe-helper-status[data-state=connected]{background:#e7f6ed;color:#16653c}#view-quality .qe-helper-status[data-state=offline],#view-quality .qe-helper-status[data-state=outdated]{background:#fff3dc;color:#895900}#view-quality .qe-progress-card{border:1px solid #f2cfaa;background:#fffaf4;padding:18px;border-radius:10px;margin:16px 0}#view-quality .qe-progress-card.done{background:#f2fbf5;border-color:#b8dfc7}#view-quality .qe-progress-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px}#view-quality .qe-progress-heading strong{font-size:24px;color:#d66b00;font-variant-numeric:tabular-nums}#view-quality .qe-progress-track{height:10px;background:#ebe6df;border-radius:20px;overflow:hidden;margin-bottom:12px}#view-quality .qe-progress-track span{display:block;height:100%;background:#ff8100;transition:width .5s ease;border-radius:20px}#view-quality .done .qe-progress-track span{background:#28a367}#view-quality .qe-diff-legend{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:20px;margin-top:18px;font-size:13px}#view-quality .qe-diff-legend mark{background:#ffec86;padding:3px 6px}#view-quality .qe-diff-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start}#view-quality .qe-diff-layout iframe{height:650px;margin-top:0}#view-quality .qe-diff-removed{background:#fff7f7;border:1px solid #f0d4d4;border-radius:8px;padding:16px;max-height:650px;overflow:auto;font-size:13px;line-height:1.65;overflow-wrap:anywhere}#view-quality .qe-diff-removed h4{font-size:13px;margin:0 0 12px}#view-quality .qe-diff-removed del{color:#9d3b3b;text-decoration-color:#c17b7b}@media(max-width:900px){#view-quality .qe-diff-layout{grid-template-columns:1fr}#view-quality .qe-diff-removed{max-height:260px}}@media(prefers-reduced-motion:reduce){#view-quality .qe-progress-track span{transition:none}}
 </style>
 </head>
 <body>
@@ -662,51 +664,148 @@ function qeRestorePrevious(){
  try{save(true);qeRevisionCandidate=null;qePromptArticle=null;renderCriteria();toast('Предыдущая версия текста восстановлена')}
  catch(e){a.content=current.content;a.quality=current.quality;a.qualityPreviousVersion=previous;renderCriteria();qeError('Не удалось сохранить восстановление. Текущая версия оставлена без изменений.');}
 }
-function qeRevisionPreview(){
- const a=get();if(!a||!qeCandidateCurrent(a))return qeError('Загрузите актуальный вариант статьи.');
- const target=document.getElementById('qeRevisionPreview');target.innerHTML='<iframe title="Доработанный вариант статьи" sandbox=""></iframe>';target.querySelector('iframe').srcdoc='<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>body{font:16px/1.6 system-ui;padding:24px;max-width:850px;margin:auto}img,table{max-width:100%}h1,h2,h3{line-height:1.25}td,th{padding:8px;border:1px solid #ddd}</style></head><body><h1>'+esc(a.h1||a.topic)+'</h1>'+qeRevisionCandidate.html+'</body></html>';
+// Comparison uses visible words and punctuation, and decorates a disposable DOM only.
+function qeDiffDocument(html){
+ const doc=qeDoc({content:html});doc.querySelectorAll('script,style,noscript,iframe,object,embed,form,base,link,meta').forEach(n=>n.remove());
+ let text='';const nodes=[],separators=/^(P|DIV|SECTION|ARTICLE|H[1-6]|LI|TR|TD|TH|BLOCKQUOTE|BR)$/,leaf=/^(P|H[1-6]|LI|TD|TH|BLOCKQUOTE|PRE)$/;
+ function walk(n,owner=doc.body){if(n.nodeType===3){nodes.push({node:n,owner,start:text.length,end:text.length+n.data.length});text+=n.data;return}if(n.nodeType!==1)return;const block=separators.test(n.tagName);if(block)text+='\n';for(const child of n.childNodes)walk(child,leaf.test(n.tagName)?n:owner);if(block)text+='\n'}
+ walk(doc.body);const tokens=[...text.matchAll(/[\p{L}\p{N}_]+|[^\s]/gu)].map(m=>({value:m[0],start:m.index,end:m.index+m[0].length})),blocks=[];let ni=0,lastOwner=null;
+ tokens.forEach((t,i)=>{while(ni<nodes.length-1&&nodes[ni].end<=t.start)ni++;const owner=nodes[ni]?.owner||doc.body;if(owner!==lastOwner){blocks.push({start:i,end:i,kind:owner.tagName});lastOwner=owner}blocks[blocks.length-1].end=i+1});
+ for(const b of blocks){b.tokens=tokens.slice(b.start,b.end);b.value=b.tokens.map(t=>t.value).join(' ');b.counts=new Map();for(const t of b.tokens)b.counts.set(t.value,(b.counts.get(t.value)||0)+1)}
+ return {doc,text,nodes,tokens,blocks};
 }
-let qeHelperJob=null;
+function qeDiffTokens(oldTokens,newTokens){
+ let start=0,oldEnd=oldTokens.length,newEnd=newTokens.length;
+ while(start<oldEnd&&start<newEnd&&oldTokens[start].value===newTokens[start].value)start++;
+ while(oldEnd>start&&newEnd>start&&oldTokens[oldEnd-1].value===newTokens[newEnd-1].value){oldEnd--;newEnd--}
+ const removed=new Set(),added=new Set(),n=oldEnd-start,m=newEnd-start;
+ // Bound memory and work for unusually large or entirely rewritten articles.
+ if(n*m>4000000){for(let i=start;i<oldEnd;i++)removed.add(i);for(let j=start;j<newEnd;j++)added.add(j);return {removed,added,coarse:true}}
+ const width=m+1,dp=new Uint32Array((n+1)*width);
+ for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i*width+j]=oldTokens[start+i].value===newTokens[start+j].value?1+dp[(i+1)*width+j+1]:Math.max(dp[(i+1)*width+j],dp[i*width+j+1]);
+ let i=0,j=0;while(i<n||j<m){if(i<n&&j<m&&oldTokens[start+i].value===newTokens[start+j].value){i++;j++}else if(j<m&&(i===n||dp[i*width+j+1]>=dp[(i+1)*width+j]))added.add(start+j++);else removed.add(start+i++)}
+ return {removed,added,coarse:false};
+}
+function qeDiffByBlocks(old,next){
+ const a=old.blocks,b=next.blocks,n=a.length,m=b.length;
+ if(n*m>40000)return qeDiffTokens(old.tokens,next.tokens);
+ const width=m+1,dp=new Float32Array((n+1)*width),scores=new Float32Array(n*m);
+ for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--){let score=0;if(a[i].kind===b[j].kind){if(a[i].value===b[j].value)score=3;else{let common=0;for(const [word,count]of a[i].counts)common+=Math.min(count,b[j].counts.get(word)||0);const similarity=2*common/(a[i].tokens.length+b[j].tokens.length);if(similarity>=.25)score=similarity}}scores[i*m+j]=score;dp[i*width+j]=Math.max(dp[(i+1)*width+j],dp[i*width+j+1],score?score+dp[(i+1)*width+j+1]:0)}
+ const added=new Set(),removed=new Set();let i=0,j=0,coarse=false;
+ while(i<n||j<m){const score=i<n&&j<m?scores[i*m+j]:0;if(score&&Math.abs(dp[i*width+j]-(score+dp[(i+1)*width+j+1]))<.0001){const d=qeDiffTokens(a[i].tokens,b[j].tokens);for(const k of d.removed)removed.add(a[i].start+k);for(const k of d.added)added.add(b[j].start+k);coarse=coarse||d.coarse;i++;j++}else if(j<m&&(i===n||dp[i*width+j+1]>=dp[(i+1)*width+j])){for(let k=b[j].start;k<b[j].end;k++)added.add(k);j++}else{for(let k=a[i].start;k<a[i].end;k++)removed.add(k);i++}}
+ return {added,removed,coarse};
+}
+function qeDiffRanges(tokens,indices){const ranges=[];for(const i of indices){const t=tokens[i],last=ranges[ranges.length-1];if(last&&i===last.last+1){last.end=t.end;last.last=i}else ranges.push({start:t.start,end:t.end,last:i})}return ranges}
+function qeBuildRevisionDiff(before,after){
+ const old=qeDiffDocument(before),next=qeDiffDocument(after),diff=qeDiffByBlocks(old,next),ranges=qeDiffRanges(next.tokens,diff.added);
+ let rangeIndex=0;
+ for(const item of next.nodes){while(rangeIndex<ranges.length&&ranges[rangeIndex].end<=item.start)rangeIndex++;let offset=0,changed=false;const fragment=next.doc.createDocumentFragment();
+  for(let k=rangeIndex;k<ranges.length&&ranges[k].start<item.end;k++){const from=Math.max(0,ranges[k].start-item.start),to=Math.min(item.node.data.length,ranges[k].end-item.start);if(to<=from)continue;if(from>offset)fragment.append(item.node.data.slice(offset,from));const mark=next.doc.createElement('mark');mark.className='qe-added';mark.textContent=item.node.data.slice(from,to);fragment.append(mark);offset=to;changed=true}
+  if(changed){fragment.append(item.node.data.slice(offset));item.node.replaceWith(fragment)}
+ }
+ return {html:next.doc.body.innerHTML,added:diff.added.size,removed:qeDiffRanges(old.tokens,diff.removed).map(r=>old.text.slice(r.start,r.end).trim()),removedCount:diff.removed.size,coarse:diff.coarse};
+}
+function qeRevisionPreview(previous=false){
+ const a=get();if(!a)return;
+ if(!previous&&!qeCandidateCurrent(a))return qeError('Загрузите актуальный вариант статьи.');
+ if(previous&&!a.qualityPreviousVersion)return;
+ const before=previous?a.qualityPreviousVersion.content:a.content,after=previous?a.content:qeRevisionCandidate.html;
+ const target=document.getElementById(previous?'qePreviousDiff':'qeRevisionPreview');if(!target)return;
+ const diff=qeBuildRevisionDiff(before,after);
+ target.innerHTML=`<div class="qe-diff-legend"><span><mark>Жёлтым</mark> — добавлено или переписано</span><span class="qe-note">Подсветка видна только при сравнении</span></div><p class="qe-note">Добавлено слов и знаков: ${diff.added} · Удалено: ${diff.removedCount}.${diff.coarse?' Большой объём изменений: выделен изменённый блок целиком.':''}${!diff.added&&!diff.removedCount?' Видимый текст совпадает; HTML, ссылки или оформление могли измениться.':''}</p><div class="qe-diff-layout"><div><iframe title="Новая статья с выделением изменений" sandbox=""></iframe></div><aside class="qe-diff-removed"><h4>Удалено из прежней версии</h4>${diff.removed.length?diff.removed.map(t=>'<p><del>'+esc(t)+'</del></p>').join(''):'<p class="qe-note">Удалённых фрагментов нет.</p>'}</aside></div>`;
+ target.querySelector('iframe').srcdoc='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src https: data:; style-src \'unsafe-inline\'"><style>body{font:16px/1.7 system-ui;padding:24px;max-width:850px;margin:auto;color:#20252b}img,table{max-width:100%}h1,h2,h3{line-height:1.25}td,th{padding:8px;border:1px solid #ddd}mark.qe-added{background:#ffec86;color:inherit;border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}a{color:#2868b7}</style></head><body><h1>'+esc(a.h1||a.topic)+'</h1>'+diff.html+'</body></html>';
+}
+let qeHelperJob=null,qeHelperFrame=null,qeHelperWatch=null,qeHelperLastSeen=0,qeHelperFinished=null,qeHelperRecovery=null;
+let qeHelperState='idle',qeHelperLaunchUntil=0;
 const QE_HELPER_ORIGIN='http://127.0.0.1:8766';
-function qeLaunchHelperFromStudio(){
- const note=document.getElementById('qeHelperLaunchNote');
- if(note)note.textContent='Запрос на запуск отправлен. Если браузер спросит, подтвердите открытие «Помощник АЛЬФАПРОМ». Через несколько секунд нажмите «Доработать через Plus».';
- toast('Запрос на запуск помощника отправлен');
+const qeHelperStages={connecting:{percent:5,label:'Подключаем помощника'},authenticating:{percent:15,label:'Проверяем вход через ChatGPT'},starting:{percent:25,label:'Передаём задание GPT'},generating:{percent:35,label:'GPT дорабатывает статью'},validating:{percent:95,label:'Получаем и проверяем HTML'},complete:{percent:100,label:'Доработка завершена'}};
+function qeHelperDuration(seconds){seconds=Math.max(0,Math.round(seconds));return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')}
+function qeHelperProgressView(job,now=Date.now()){
+ const elapsed=Math.max(0,((job.finishedAt||now)-job.started)/1000),stage=qeHelperStages[job.stage]||qeHelperStages.connecting;
+ // Model events report stages, not a completion fraction. Interpolation is explicitly an estimate.
+ let percent=stage.percent;if(job.stage==='generating')percent=Math.min(90,35+55*Math.min(1,Math.max(0,elapsed-8)/job.estimate));
+ job.percent=Math.max(job.percent||0,Math.floor(percent));
+ const remaining=Math.max(0,job.estimate-elapsed),time=job.stage==='complete'?'Готово за '+qeHelperDuration(elapsed):'Прошло '+qeHelperDuration(elapsed)+(job.stage==='validating'?' · Проверяем результат':remaining>0?' · Ориентировочно ещё '+qeHelperDuration(remaining):' · Дольше первоначальной оценки; GPT продолжает работу');
+ return {percent:job.percent,label:job.cancelling?'Останавливаем доработку…':job.disconnected?'Связь потеряна · ожидаем ответ помощника':stage.label,time};
 }
+function qeHelperStatusText(){
+ if(qeHelperState==='connected')return '● Программа активирована · помощник подключён';
+ if(qeHelperState==='launching')return 'Запрос на запуск отправлен. Подтвердите открытие приложения на Mac, если браузер попросит. Подключаемся…';
+ if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.2 и перезапустите его через меню α SEO.';
+ if(qeHelperState==='offline')return 'Программа завершила работу или связь потеряна. Запустите помощника и нажмите «Проверить подключение».';
+ if(qeHelperState==='checking')return 'Проверяем подключение помощника…';
+ return 'Запустите помощника один раз. Его статус, ход доработки и результат появятся на этой странице.';
+}
+function qeRenderHelperProgress(){
+ const job=qeHelperJob||(qeHelperFinished?.articleId===get()?.id?qeHelperFinished:null);if(!job)return '<div id="qeHelperProgress" hidden></div>';
+ const p=qeHelperProgressView(job);return `<div id="qeHelperProgress" class="qe-progress-card ${job.stage==='complete'?'done':''}"><div class="qe-progress-heading"><b id="qeHelperStage" role="status">${esc(p.label)}</b><strong id="qeHelperPercent">${p.percent}%</strong></div><div id="qeHelperBar" class="qe-progress-track" role="progressbar" aria-label="Оценочный прогресс доработки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.percent}"><span style="width:${p.percent}%"></span></div><p id="qeHelperTime" class="qe-note">${esc(p.time)}</p>${job.articleId!==get()?.id?'<p class="qe-note">Дорабатывается: '+esc(job.articleTitle||'другая статья')+'</p>':''}<p class="qe-note">Процент и время приблизительные: GPT сообщает этапы работы, но не точное время завершения.</p>${qeHelperJob?'<button class="btn small" onclick="qeCancelPlusRevision()">Остановить доработку</button>':''}</div>`;
+}
+function qeUpdateHelperUI(){
+ const note=document.getElementById('qeHelperLaunchNote');if(note){note.textContent=qeHelperStatusText();note.dataset.state=qeHelperState}
+ const job=qeHelperJob||(qeHelperFinished?.articleId===get()?.id?qeHelperFinished:null);if(!job)return;const p=qeHelperProgressView(job),stage=document.getElementById('qeHelperStage'),bar=document.getElementById('qeHelperBar');
+ if(stage)stage.textContent=p.label;if(bar){bar.setAttribute('aria-valuenow',p.percent);bar.firstElementChild.style.width=p.percent+'%'}
+ const percent=document.getElementById('qeHelperPercent'),time=document.getElementById('qeHelperTime');if(percent)percent.textContent=p.percent+'%';if(time)time.textContent=p.time;
+}
+function qeEnsureHelper(reconnect=false){
+ if(reconnect&&qeHelperJob?.sent)return;
+ if(!qeHelperFrame||reconnect){qeHelperFrame?.remove();qeHelperFrame=document.createElement('iframe');qeHelperFrame.id='qeHelperBridge';qeHelperFrame.title='Фоновое подключение помощника АЛЬФАПРОМ';qeHelperFrame.hidden=true;qeHelperFrame.src=QE_HELPER_ORIGIN+'/';document.body.append(qeHelperFrame);qeHelperState=qeHelperState==='launching'?'launching':'checking';qeHelperLastSeen=0;
+  qeHelperFrame.onload=()=>qeHelperFrame.contentWindow.postMessage({type:'alfaprom.helper.ping'},QE_HELPER_ORIGIN);
+ }
+ if(!qeHelperWatch)qeHelperWatch=setInterval(()=>{
+  const now=Date.now();if(qeHelperLastSeen&&now-qeHelperLastSeen>14000){qeHelperState='offline';if(qeHelperJob)qeHelperJob.disconnected=true;}
+  if(!qeHelperJob&&qeHelperLaunchUntil>now&&qeHelperState!=='connected')qeEnsureHelper(true);
+  else qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.helper.ping'},QE_HELPER_ORIGIN);
+  if(qeHelperState==='checking'&&!qeHelperLastSeen&&!qeHelperLaunchUntil){qeHelperState='idle'}qeUpdateHelperUI();
+ },3000);
+ qeUpdateHelperUI();
+}
+function qeConnectHelper(){qeEnsureHelper(true)}
+function qeLaunchHelperFromStudio(){qeHelperState='launching';qeHelperLaunchUntil=Date.now()+18000;qeEnsureHelper(true);toast('Запрос на запуск помощника отправлен')}
+function qeSendHelperJob(){const job=qeHelperJob;if(!job||job.sent||qeHelperState!=='connected')return;job.sent=true;clearTimeout(job.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeStartPlusRevision(){
  const a=get(),prompt=qeGetRevisionPrompt();if(!a||!prompt)return;
- if(qeHelperJob)return qeError('Доработка уже выполняется. Дождитесь результата или остановите её в окне помощника.');
- const popup=window.open(QE_HELPER_ORIGIN+'/','alfaprom-plus-helper');
- if(!popup)return qeError('Браузер заблокировал окно помощника. Разрешите открытие окна и повторите действие.');
- qeHelperJob={id:crypto.randomUUID(),articleId:a.id,fingerprint:qeFingerprint(a),token:qeRevisionToken(a),popup,prompt,sent:false};
- qeHelperJob.watch=setInterval(()=>{if(qeHelperJob?.popup.closed){clearTimeout(qeHelperJob.timer);clearInterval(qeHelperJob.watch);qeHelperJob=null;renderCriteria();qeError('Окно помощника закрыто. Доработка остановлена; исходная статья сохранена.')}},2000);
- qeHelperJob.timer=setTimeout(()=>{if(qeHelperJob&&!qeHelperJob.sent){clearInterval(qeHelperJob.watch);qeHelperJob=null;renderCriteria();qeError('Помощник не ответил. Нажмите «Запустить помощника», подтвердите открытие приложения на Mac и повторите доработку.')}},20000);
- renderCriteria();
+ if(qeHelperJob)return qeError('Доработка уже выполняется. Дождитесь результата или нажмите «Остановить доработку».');
+ qeHelperFinished=null;
+ const estimate=Math.max(90,Math.min(600,60+qeText(qeDoc(a)).length/40));
+ qeHelperJob={id:crypto.randomUUID(),articleId:a.id,articleTitle:a.topic,fingerprint:qeFingerprint(a),token:qeRevisionToken(a),prompt,sent:false,started:Date.now(),estimate,stage:'connecting',percent:5};
+ qeHelperJob.tick=setInterval(qeUpdateHelperUI,1000);
+ qeHelperJob.deadline=setTimeout(()=>qeFinishHelperError('Помощник не вернул результат за 16 минут. Остановите его через меню α SEO перед повторным запуском. Исходная статья сохранена.'),960000);
+ qeHelperJob.timer=setTimeout(()=>{if(qeHelperJob&&!qeHelperJob.sent)qeFinishHelperError('Помощник не подключился. Запустите его, проверьте подключение и повторите доработку. Если установлена прежняя версия, обновите помощника до 1.2.');},15000);
+ if(qeHelperState!=='connected')qeEnsureHelper(true);qeSendHelperJob();renderCriteria();
 }
+function qeCancelPlusRevision(){const job=qeHelperJob;if(!job)return;if(!job.sent)return qeFinishHelperError('Подключение остановлено. Исходная статья сохранена.');job.cancelling=true;qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
+function qeClearHelperJob(){const job=qeHelperJob;if(job){clearTimeout(job.timer);clearTimeout(job.deadline);clearInterval(job.tick)}qeHelperJob=null;return job}
+function qeFinishHelperError(message){qeClearHelperJob();qeHelperFinished=null;renderCriteria();qeError(message)}
+function qeDownloadHelperRecovery(){if(qeHelperRecovery)download('article-improved.html',qeHelperRecovery,'text/html')}
 function qeHandleHelperMessage(event){
- const job=qeHelperJob;if(!job||event.origin!==QE_HELPER_ORIGIN||event.source!==job.popup||!event.data)return;
- if(event.data.type==='alfaprom.helper.ready'){
-  if(job.sent)return;job.sent=true;clearTimeout(job.timer);job.popup.postMessage({type:'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);renderCriteria();return;
+ if(event.origin!==QE_HELPER_ORIGIN||!qeHelperFrame||event.source!==qeHelperFrame.contentWindow||!event.data)return;
+ const data=event.data;
+ if(data.type==='alfaprom.helper.ready'){
+  qeHelperLastSeen=Date.now();if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=3?'connected':'outdated';if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
  }
- if(event.data.jobId!==job.id)return;
- if(event.data.type==='alfaprom.revision.error'){clearTimeout(job.timer);clearInterval(job.watch);qeHelperJob=null;renderCriteria();qeError(String(event.data.error||'Доработка не завершена. Исходная статья сохранена.'));return}
- if(event.data.type!=='alfaprom.revision.result')return;
- clearTimeout(job.timer);clearInterval(job.watch);qeHelperJob=null;
+ if(data.type==='alfaprom.helper.offline'){qeHelperState='offline';qeUpdateHelperUI();return}
+ const job=qeHelperJob;if(!job||data.jobId!==job.id)return;
+ if(data.type==='alfaprom.revision.progress'){qeHelperLastSeen=Date.now();if(qeHelperStages[data.stage]&&qeHelperStages[data.stage].percent>=qeHelperStages[job.stage].percent)job.stage=data.stage==='complete'?'validating':data.stage;qeUpdateHelperUI();return}
+ if(data.type==='alfaprom.revision.error')return qeFinishHelperError(String(data.error||'Доработка не завершена. Исходная статья сохранена.'));
+ if(data.type!=='alfaprom.revision.result')return;
+ qeClearHelperJob();qeHelperRecovery=typeof data.html==='string'?data.html:null;
  const a=get();
- if(!a||a.id!==job.articleId||qeFingerprint(a)!==job.fingerprint||qeRevisionToken(a)!==job.token){renderCriteria();qeError('За время доработки статья или анализ изменились. Результат можно скачать в окне помощника; текущая статья не заменена.');return}
- try{qeRevisionCandidate={...qeParseRevision(event.data.html,a),filename:'Доработка через подписку ChatGPT'};renderCriteria();document.getElementById('qeRevisionReturn')?.scrollIntoView({block:'nearest'});toast('Доработка готова. Просмотрите новый вариант перед применением.')}
- catch(e){renderCriteria();qeError(e.message+' Результат сохранён в окне помощника.');}
+ if(!a||a.id!==job.articleId||qeFingerprint(a)!==job.fingerprint||qeRevisionToken(a)!==job.token){renderCriteria();qeError('За время доработки статья или анализ изменились. Скачайте полученный HTML ниже. Текущая статья не заменена.');return}
+ try{qeRevisionCandidate={...qeParseRevision(data.html,a),filename:'Доработка через подписку ChatGPT'};qeHelperFinished={...job,stage:'complete',percent:100,finishedAt:Date.now()};qeHelperRecovery=null;renderCriteria();qeRevisionPreview();document.getElementById('qeRevisionReturn')?.scrollIntoView({block:'nearest'});toast('Доработка готова. Изменения выделены в новом варианте.')}
+ catch(e){renderCriteria();qeError(e.message+' Полученный HTML можно скачать ниже.');}
 }
 window.addEventListener('message',qeHandleHelperMessage);
 
+function qeRenderHelperControls(a){return `<p class="qe-note">Режим доработки 1.2 · статус и результат на этой странице</p><div class="actions"><a class="btn" style="color:inherit;text-decoration:none" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить помощника</a><button class="btn primary" onclick="qeStartPlusRevision()" ${qeHelperJob||!qeCurrent(a)?'disabled':''}>${qeHelperJob?'Выполняется доработка…':'Доработать через Plus'}</button></div><div class="qe-helper-status" id="qeHelperLaunchNote" role="status" data-state="${qeHelperState}">${esc(qeHelperStatusText())}</div><button class="btn small" onclick="qeConnectHelper()" ${qeHelperJob?'disabled':''}>Проверить подключение</button>${qeRenderHelperProgress()}${qeHelperRecovery?'<div class="qe-notice">Результат сохранён для ручного возврата. <button class="btn small" onclick="qeDownloadHelperRecovery()">Скачать полученный HTML</button></div>':''}`;}
+
 function qeRenderRevision(a){
- if(!qeCurrent(a))return `<div class="card qe-panel" style="margin-top:18px"><h3>Доработка статьи в ChatGPT</h3><p class="muted">После анализа здесь автоматически появится задание с текущими замечаниями и полным текстом статьи.</p>${a.qualityPreviousVersion?'<button class="btn" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button>':''}</div>`;
+ if(!qeCurrent(a))return `<div class="card qe-panel" style="margin-top:18px"><h3>Доработка статьи в ChatGPT</h3><p class="muted">После анализа здесь автоматически появится задание с текущими замечаниями и полным текстом статьи.</p>${qeRenderHelperControls(a)}${a.qualityPreviousVersion?'<div class="actions"><button class="btn" onclick="qeRevisionPreview(true)">Показать изменения последней доработки</button><button class="btn" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button></div><div id="qePreviousDiff"></div>':''}</div>`;
  const context=qeRevisionContext(a),c=qeRevisionCandidate?.articleId===a.id?qeRevisionCandidate:null,valid=qeCandidateCurrent(a),bad=context.criteria.filter(r=>r.status==='problem').length,unknown=context.criteria.filter(r=>r.status==='unverified').length;
  const oldWords=qeText(qeDoc(a)).split(/\s+/).filter(Boolean).length;
- return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><div><h3>Доработка статьи в ChatGPT</h3><p class="qe-note">Задание сформировано автоматически по текущему анализу: замечания, основания, факты и полный HTML статьи.</p></div><span class="pill">Без платного API</span></div><p>Критериев с проблемами: <b>${bad}</b> · Ожидают подтверждения: <b>${unknown}</b></p><div class="actions"><a class="btn" style="color:inherit;text-decoration:none" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить помощника</a><button class="btn primary" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>${qeHelperJob?'Выполняется доработка…':'Доработать через Plus'}</button></div><p class="qe-note" id="qeHelperLaunchNote" style="margin-top:12px">Нажмите «Запустить помощника», затем «Доработать через Plus». На этом Mac помощник работает в фоне, без окна Terminal. Используются лимиты подписки ChatGPT.</p><details style="margin-bottom:16px"><summary style="cursor:pointer">Что такое локальный помощник?</summary><p class="qe-note">Небольшая программа на вашем компьютере передаёт статью подключённому ChatGPT и возвращает HTML в студию. Запускается кнопкой из студии и появляется в строке меню Mac как «α SEO». Оттуда его можно остановить. Исходный текст заменяется после вашего просмотра; при ошибке или исчерпании лимита доработка останавливается.</p><p class="qe-note">На другом Mac нужно один раз установить обработчик запуска: <a href="alfaprom-mac-helper.zip" download>скачать помощника для Mac с Apple Silicon</a>, распаковать и открыть ALFAPROM Helper.app. Если используется прежний запуск через .command, закройте его перед первым запуском приложения.</p></details><div class="actions"><button class="btn" onclick="qeCopyRevision(true)">Скопировать и открыть ChatGPT ↗</button><button class="btn" onclick="qeCopyRevision()">Скопировать задание</button><button class="btn" onclick="qeDownloadRevision()">Скачать TXT</button></div><p class="qe-note" style="margin-top:12px">В ChatGPT вставьте задание (Ctrl+V / ⌘V) и нажмите «Отправить». Затем загрузите полученный article-improved.html ниже. Если вкладка не открылась, <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">откройте ChatGPT</a>. Студия не читает ваш чат автоматически.</p><details><summary style="cursor:pointer">Посмотреть готовое задание</summary><textarea id="qeRevisionPrompt" aria-label="Задание на доработку статьи" readonly class="qe-prompt" style="margin-top:12px">${esc(qeBuildRevisionPrompt(a))}</textarea></details>
+ return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><div><h3>Доработка статьи в ChatGPT</h3><p class="qe-note">Задание сформировано автоматически по текущему анализу: замечания, основания, факты и полный HTML статьи.</p></div><span class="pill">Без платного API</span></div><p>Критериев с проблемами: <b>${bad}</b> · Ожидают подтверждения: <b>${unknown}</b></p>${qeRenderHelperControls(a)}<details style="margin-bottom:16px"><summary style="cursor:pointer">Что такое локальный помощник?</summary><p class="qe-note">Небольшая программа на вашем компьютере передаёт статью подключённому ChatGPT и возвращает HTML в студию. Запускается кнопкой из студии и появляется в строке меню Mac как «α SEO». Оттуда его можно остановить. Работает в фоне: отдельное окно не открывается. Для этого режима нужна версия помощника 1.2. Исходный текст заменяется после вашего просмотра; при ошибке или исчерпании лимита доработка останавливается.</p><p class="qe-note">На другом Mac нужно один раз установить обработчик запуска: <a href="alfaprom-mac-helper.zip" download>скачать помощника для Mac с Apple Silicon</a>, распаковать и открыть ALFAPROM Helper.app. Если используется прежний запуск через .command, закройте его перед первым запуском приложения.</p></details><div class="actions"><button class="btn" onclick="qeCopyRevision(true)">Скопировать и открыть ChatGPT ↗</button><button class="btn" onclick="qeCopyRevision()">Скопировать задание</button><button class="btn" onclick="qeDownloadRevision()">Скачать TXT</button></div><p class="qe-note" style="margin-top:12px">В ChatGPT вставьте задание (Ctrl+V / ⌘V) и нажмите «Отправить». Затем загрузите полученный article-improved.html ниже. Если вкладка не открылась, <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">откройте ChatGPT</a>. Студия не читает ваш чат автоматически.</p><details><summary style="cursor:pointer">Посмотреть готовое задание</summary><textarea id="qeRevisionPrompt" aria-label="Задание на доработку статьи" readonly class="qe-prompt" style="margin-top:12px">${esc(qeBuildRevisionPrompt(a))}</textarea></details>
  <div id="qeRevisionReturn" style="border-top:1px solid var(--line);margin-top:20px;padding-top:20px"><h3>Вернуть улучшенную статью</h3><button class="btn" onclick="document.getElementById('qualityRevisionFile').click()">Загрузить улучшенный HTML</button><details style="margin-top:12px"><summary style="cursor:pointer">Или вставить HTML из ответа</summary><div class="field" style="margin-top:12px"><label for="qeRevisionPaste">Полный HTML улучшенной статьи</label><textarea id="qeRevisionPaste" placeholder="Вставьте полный HTML, полученный от ChatGPT"></textarea></div><button class="btn small" onclick="qePasteRevision()">Проверить вставленный HTML</button></details>
- ${c?`<div class="qe-notice" style="margin-top:16px">${valid?'Новый вариант загружен для просмотра. Текущая статья пока не заменена.':'Статья или анализ изменились. Этот загруженный вариант нельзя применить.'}</div><p class="qe-note">${esc(c.filename)} · Сейчас ${oldWords} слов → новый вариант ${c.words} слов.</p>${c.words<oldWords*.65?'<p class="qe-notice">Новый текст заметно короче исходного. Перед заменой проверьте, сохранены ли полезные разделы.</p>':''}${!c.token?'<label class="qe-checkline"><input id="qeRevisionIdentity" type="checkbox"><span>В файле нет метки версии. Я проверил, что это доработка именно выбранной статьи.</span></label>':'<p class="qe-note">✓ Метка статьи и версии совпадает с текущим заданием.</p>'}<div class="actions"><button class="btn" onclick="qeRevisionPreview()" ${!valid?'disabled':''}>Посмотреть новый вариант</button><button class="btn primary" onclick="qeApplyRevision()" ${!valid?'disabled':''}>Применить и проверить заново</button><button class="btn" onclick="qeDiscardRevision()">Отменить загрузку</button></div><div id="qeRevisionPreview"></div>`:'<p class="qe-note" style="margin-top:12px">Перед заменой будет доступен просмотр. Предыдущий текст сохранится для восстановления. Новая версия автоматически пройдёт быструю проверку и потребует нового редакционного решения.</p>'}</div>
- ${a.qualityPreviousVersion?`<div style="border-top:1px solid var(--line);padding-top:16px;margin-top:18px"><p class="qe-note">Предыдущая версия сохранена: ${qeDate(a.qualityPreviousVersion.savedAt)}.</p><button class="btn small" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button></div>`:''}</div>`;
+ ${c?`<div class="qe-notice" style="margin-top:16px">${valid?'Новый вариант загружен для просмотра. Текущая статья пока не заменена.':'Статья или анализ изменились. Этот загруженный вариант нельзя применить.'}</div><p class="qe-note">${esc(c.filename)} · Сейчас ${oldWords} слов → новый вариант ${c.words} слов.</p>${c.words<oldWords*.65?'<p class="qe-notice">Новый текст заметно короче исходного. Перед заменой проверьте, сохранены ли полезные разделы.</p>':''}${!c.token?'<label class="qe-checkline"><input id="qeRevisionIdentity" type="checkbox"><span>В файле нет метки версии. Я проверил, что это доработка именно выбранной статьи.</span></label>':'<p class="qe-note">✓ Метка статьи и версии совпадает с текущим заданием.</p>'}<div class="actions"><button class="btn" onclick="qeRevisionPreview()" ${!valid?'disabled':''}>Посмотреть изменения</button><button class="btn primary" onclick="qeApplyRevision()" ${!valid?'disabled':''}>Применить и проверить заново</button><button class="btn" onclick="qeDiscardRevision()">Отменить загрузку</button></div><div id="qeRevisionPreview"></div>`:'<p class="qe-note" style="margin-top:12px">Перед заменой будет доступен просмотр. Предыдущий текст сохранится для восстановления. Новая версия автоматически пройдёт быструю проверку и потребует нового редакционного решения.</p>'}</div>
+ ${a.qualityPreviousVersion?`<div style="border-top:1px solid var(--line);padding-top:16px;margin-top:18px"><p class="qe-note">Предыдущая версия сохранена: ${qeDate(a.qualityPreviousVersion.savedAt)}.</p><div class="actions"><button class="btn small" onclick="qeRevisionPreview(true)">Показать изменения последней доработки</button><button class="btn small" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button></div><div id="qePreviousDiff"></div></div>`:''}</div>`;
 }
 
 function qeBuildPrompt(a){
@@ -846,6 +945,7 @@ function renderCriteria(){
  if(!a){root.innerHTML='<div class="empty">Выберите или добавьте статью в SEO-плане.</div>';return}
  const q=a.quality,stale=!!q&&!qeCurrent(a),legacy=!q&&((a.criteria||[]).includes('ok')||Object.values(a.scores||{}).some(x=>x>0));
  root.innerHTML=`<div class="qe-heading"><div><h2>Проверка качества статьи</h2><p class="muted qe-mobile-wrap">${esc(a.topic||'Без названия')}</p><div class="qe-note">Версия текста: ${qeFingerprint(a).slice(0,8)} · Последняя проверка: ${qeDate(q?.checkedAt)}</div></div><span class="pill">Стандарт АЛЬФАПРОМ · 23 критерия</span></div><div class="qe-tabs" role="tablist" aria-label="Этап проверки"><button class="btn" role="tab" aria-selected="${qeTab==='text'}" onclick="qeSetTab('text')">Проверка текста</button><button class="btn" role="tab" aria-selected="${qeTab==='final'}" onclick="qeSetTab('final')">Перед публикацией</button></div><div id="qeMessage" class="qe-error hidden" role="alert"></div>${stale?'<div class="qe-notice">⚠ Статья или данные проверки изменились — результаты нужно обновить.</div>':''}${legacy?'<div class="qe-notice">Прежние ручные галочки и условные баллы не подтверждают качество. Запустите новую проверку: данные статьи сохранены.</div>':''}${qeTab==='text'?qeRenderText(a)+qeRenderRevision(a):qeRenderFinal(a)}`;
+ if(!qeHelperFrame)qeEnsureHelper();qeUpdateHelperUI();if(qeTab==='text'&&qeCandidateCurrent(a))qeRevisionPreview();
 }
 
 function prepareGeneration(){

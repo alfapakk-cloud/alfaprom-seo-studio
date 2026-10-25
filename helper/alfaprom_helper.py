@@ -9,6 +9,7 @@ import signal
 import subprocess
 import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 8766
@@ -20,6 +21,47 @@ SESSION = secrets.token_urlsafe(32)
 LOCK = threading.Lock()
 ACTIVE = {}
 CANCELLED = set()
+PROGRESS = {}
+
+
+def set_progress(job_id, stage):
+    with LOCK:
+        now = time.monotonic()
+        state = PROGRESS.setdefault(job_id, {'started': now})
+        order = ['connecting', 'authenticating', 'starting', 'generating', 'validating', 'complete']
+        if state.get('stage') in order and order.index(stage) < order.index(state['stage']):
+            return
+        state.update(stage=stage, updated=now)
+        # No article, prompt, model output or account data is kept in progress records.
+        for old_id in list(PROGRESS):
+            if old_id != job_id and old_id not in ACTIVE and now - PROGRESS[old_id]['updated'] > 1800:
+                del PROGRESS[old_id]
+
+
+def progress_snapshot(job_id):
+    with LOCK:
+        state = PROGRESS.get(job_id)
+        if not state:
+            return {'stage': 'connecting', 'elapsed': 0}
+        return {'stage': state['stage'], 'elapsed': round(time.monotonic() - state['started'])}
+
+
+def watch_events(path, job_id, stop):
+    # Read only documented event types. Never forward model text or raw stderr to the page.
+    with path.open(encoding='utf-8') as stream:
+        while not stop.is_set():
+            line = stream.readline()
+            if not line:
+                stop.wait(.25)
+                continue
+            try:
+                event = json.loads(line)
+                if event.get('type') == 'turn.started':
+                    set_progress(job_id, 'generating')
+                elif event.get('type') == 'turn.completed':
+                    set_progress(job_id, 'validating')
+            except (ValueError, AttributeError):
+                pass
 
 
 def codex_binary():
@@ -47,23 +89,34 @@ def require_chatgpt(binary, env):
 
 
 def execute_revision(prompt, job_id):
+    set_progress(job_id, 'authenticating')
     binary, env = codex_binary(), clean_environment()
     require_chatgpt(binary, env)
+    with LOCK:
+        if job_id in CANCELLED:
+            CANCELLED.discard(job_id)
+            raise ValueError('Доработка остановлена. Исходная статья не изменена.')
     with tempfile.TemporaryDirectory(prefix='alfaprom-revision-') as folder:
         root = Path(folder)
         schema = {'type': 'object', 'properties': {'html': {'type': 'string'}}, 'required': ['html'], 'additionalProperties': False}
         schema_file, result_file = root / 'response-schema.json', root / 'result.json'
         schema_file.write_text(json.dumps(schema), encoding='utf-8')
         command = [binary, 'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
-                   '--sandbox', 'read-only', '--color', 'never', '-c', 'model_provider="openai"',
+                   '--sandbox', 'read-only', '--json', '--color', 'never', '-c', 'model_provider="openai"',
                    '-c', 'forced_login_method="chatgpt"', '-c', 'features.shell_tool=false',
                    '--output-schema', str(schema_file), '--output-last-message', str(result_file), '-']
         instruction = ('Выполни редакционную доработку по заданию ниже. Не используй локальные файлы, shell, '
                        'внешние приложения, MCP или подагентов. Верни JSON по схеме: единственное поле html '
                        'с полным исправленным HTML. Сохрани техническую метку версии в html. '
                        'Не создавай файл на диске — верни содержимое в финальном ответе.\n\n' + prompt)
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        events_path, errors_path = root / 'events.jsonl', root / 'errors.log'
+        events_file, errors_file = events_path.open('w'), errors_path.open('w')
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=events_file, stderr=errors_file,
                                    text=True, env=env, cwd=root, start_new_session=True)
+        set_progress(job_id, 'starting')
+        stop = threading.Event()
+        watcher = threading.Thread(target=watch_events, args=(events_path, job_id, stop), daemon=True)
+        watcher.start()
         with LOCK:
             ACTIVE[job_id] = process
             if job_id in CANCELLED:
@@ -76,22 +129,28 @@ def execute_revision(prompt, job_id):
                 raise ValueError('Доработка остановлена. Исходная статья не изменена.')
             if process.returncode:
                 # Raw stderr can contain article fragments and local paths; never expose it to a website.
-                combined = (stdout + stderr).lower()
+                combined = ((stdout or '') + (stderr or '') + errors_path.read_text(encoding='utf-8', errors='replace') + events_path.read_text(encoding='utf-8', errors='replace')).lower()
                 if any(word in combined for word in ['rate_limit', 'usage limit', 'limit reached', 'quota', 'credits']):
                     raise ValueError('Лимит ChatGPT/Codex исчерпан или запрос недоступен по тарифу. Доработка остановлена; платный API не подключается.')
                 raise ValueError('Codex не завершил запрос. Проверьте вход через ChatGPT, доступ к сети и лимиты подписки. Платного API-перехода нет.')
             if not result_file.is_file():
                 raise ValueError('Codex не вернул итоговый HTML. Исходная статья не изменена.')
+            set_progress(job_id, 'validating')
             data = json.loads(result_file.read_text(encoding='utf-8'))
             html = data.get('html')
             if not isinstance(html, str) or len(html.encode('utf-8')) > MAX_BODY or not html.strip():
                 raise ValueError('Ответ не содержит подходящий HTML статьи.')
+            set_progress(job_id, 'complete')
             return html
         except subprocess.TimeoutExpired:
             os.killpg(process.pid, signal.SIGTERM)
             process.communicate(timeout=15)
             raise ValueError('Доработка превысила 15 минут и остановлена. Исходный текст сохранён.')
         finally:
+            stop.set()
+            watcher.join(timeout=1)
+            events_file.close()
+            errors_file.close()
             with LOCK:
                 ACTIVE.pop(job_id, None)
                 CANCELLED.discard(job_id)
@@ -108,7 +167,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
-        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
+        ancestors = ' '.join(PARENT_ORIGINS)
+        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors " + ancestors + "; base-uri 'none'")
         self.end_headers()
         try:
             self.wfile.write(payload)
@@ -122,7 +182,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.valid_host():
             return self.send(403, {'error': 'Host rejected'})
         if self.path == '/health':
-            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 2})
+            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 3})
         if self.path != '/':
             return self.send(404, {'error': 'Not found'})
         page = (Path(__file__).parent / 'panel.html').read_text(encoding='utf-8')
@@ -132,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.valid_host() or self.headers.get('Origin') != ORIGIN or self.headers.get('X-Alfaprom-Session') != SESSION:
             return self.send(403, {'error': 'Доступ разрешён только подключённому локальному окну студии.'})
-        if self.path not in ['/revise', '/cancel']:
+        if self.path not in ['/revise', '/cancel', '/progress']:
             return self.send(404, {'error': 'Not found'})
         try:
             length = int(self.headers.get('Content-Length', '0'))
@@ -142,9 +202,12 @@ class Handler(BaseHTTPRequestHandler):
             job_id = data.get('jobId', '')
             if not isinstance(job_id, str) or not 10 <= len(job_id) <= 100:
                 raise ValueError('Некорректный идентификатор задания.')
+            if self.path == '/progress':
+                return self.send(200, progress_snapshot(job_id))
             if self.path == '/cancel':
                 with LOCK:
-                    CANCELLED.add(job_id)
+                    if job_id in PROGRESS:
+                        CANCELLED.add(job_id)
                     process = ACTIVE.get(job_id)
                     if process and process.poll() is None:
                         os.killpg(process.pid, signal.SIGTERM)
@@ -156,6 +219,7 @@ class Handler(BaseHTTPRequestHandler):
             if not JOB_LOCK.acquire(blocking=False):
                 return self.send(409, {'error': 'Другая доработка уже выполняется. Дождитесь результата.'})
             try:
+                set_progress(job_id, 'connecting')
                 html = execute_revision(prompt, job_id)
                 self.send(200, {'html': html, 'authMode': 'chatgpt'})
             finally:
