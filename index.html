@@ -184,6 +184,8 @@ function qeRestoreLocalProject(){
 }
 function qeOpenLocalStudio(){
  if(qeHelperJob)return qeError('Дождитесь завершения доработки перед переносом проекта.');
+ // Preserve the source origin for this explicit HTTPS-to-loopback navigation. No URL paths or article text go in the referrer.
+ const referrer=document.createElement('meta');referrer.name='referrer';referrer.content='origin';document.head.append(referrer);
  const form=document.createElement('form');form.method='POST';form.action=QE_HELPER_ORIGIN+'/studio';form.target='_self';form.hidden=true;
  const field=document.createElement('input');field.type='hidden';field.name='project';field.value=JSON.stringify(db);form.append(field);document.body.append(form);form.submit();
 }
