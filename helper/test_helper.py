@@ -58,7 +58,7 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 3})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 4})])
 
     def test_progress_contains_no_article_or_account_data(self):
         helper.set_progress('progress-test', 'generating')
@@ -90,6 +90,18 @@ class HelperTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'остановлена'):
                 helper.execute_revision('test', 'cancelled-before-start')
             process.assert_not_called()
+
+    def test_transfer_preserves_project_and_escapes_script_termination(self):
+        import json
+        project = {'currentId': 8, 'articles': [{'id': 8, 'content': '<p>Текст</p></script><script>bad()</script>'}]}
+        page = helper.studio_page(project)
+        payload = page.split('id="alfapromTransfer">', 1)[1].split('</script>', 1)[0]
+        self.assertNotIn('<', payload)
+        self.assertEqual(json.loads(payload), project)
+
+    def test_transfer_rejects_non_project_payload(self):
+        with self.assertRaises(ValueError):
+            helper.studio_page({'content': 'not a project'})
 
     def test_native_shutdown_stops_active_generation(self):
         helper.ACTIVE['test-active-job'] = SimpleNamespace(pid=999999, poll=lambda: None)

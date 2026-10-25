@@ -15,14 +15,15 @@ macos.mkdir(parents=True, exist_ok=True)
 (resources / 'helper').mkdir(parents=True, exist_ok=True)
 for name in ['alfaprom_helper.py', 'panel.html']:
     shutil.copy2(ROOT / 'helper' / name, resources / 'helper' / name)
+shutil.copy2(ROOT / 'index.html', resources / 'helper' / 'studio.html')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.2',
-    'CFBundleVersion': '3',
+    'CFBundleShortVersionString': '1.3',
+    'CFBundleVersion': '4',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

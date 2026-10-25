@@ -48,3 +48,12 @@ Codex по подписке не равен открытию той же ист�
 
 Тесты Python: `PYTHONPYCACHEPREFIX=/private/tmp/alfaprom-pycache python3 helper/test_helper.py`.
 
+
+
+## Version 1.3 / protocol 4: local Studio
+
+Some browsers do not deliver the HTTPS-to-loopback iframe connection. The explicit button opens the complete Studio at http://127.0.0.1:8766/studio in the same tab. A form POST carries the current project in the request body, not in the URL. Host and Origin are validated; the transfer never starts inference. JSON is safely embedded as non-executable data. The local page and helper share one origin.
+
+The first transfer preserves the full project, including queue and quality snapshots. If a local project already exists, it stays selected; the incoming project can be accepted explicitly and the previous local project is backed up for restoration. Website and local browser storage are separate. Continue editing locally after transfer, and export JSON backups. There is no automatic synchronization back to GitHub Pages.
+
+The installed app bundles studio.html. Public endpoints remain health metadata and page content; generation and account diagnostics require the local session nonce. The native process was restarted by the user and verified as protocol 4 with ChatGPT authentication. Regression checks: 74 browser scenarios, 14 Python tests, and a complete mock transfer/revision cycle without inference. Real revision validation is tracked in the local project audit.

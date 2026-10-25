@@ -10,18 +10,33 @@ import subprocess
 import tempfile
 import threading
 import time
+from urllib.parse import parse_qs
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 8766
 MAX_BODY = 2_000_000
 HOST = f'127.0.0.1:{PORT}'
 ORIGIN = f'http://{HOST}'
-PARENT_ORIGINS = ['https://alfapakk-cloud.github.io', 'http://127.0.0.1:8765']
+PARENT_ORIGINS = ['https://alfapakk-cloud.github.io', 'http://127.0.0.1:8765', ORIGIN]
 SESSION = secrets.token_urlsafe(32)
 LOCK = threading.Lock()
 ACTIVE = {}
 CANCELLED = set()
 PROGRESS = {}
+
+
+def studio_page(project=None):
+    source = Path(__file__).with_name('studio.html')
+    if not source.is_file():
+        source = Path(__file__).parent.parent / 'index.html'
+    page = source.read_text(encoding='utf-8')
+    if project is not None:
+        if not isinstance(project, dict) or not isinstance(project.get('articles'), list):
+            raise ValueError('Нужен проект с очередью статей.')
+        payload = json.dumps(project, ensure_ascii=True).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+        tag = '<script type="application/json" id="alfapromTransfer">' + payload + '</script>'
+        page = page.replace('<body>', '<body>' + tag, 1)
+    return page
 
 
 def set_progress(job_id, stage):
@@ -82,9 +97,26 @@ def clean_environment():
     return result
 
 
-def require_chatgpt(binary, env):
+def chatgpt_status(binary, env):
     status = subprocess.run([binary, 'login', 'status'], capture_output=True, text=True, timeout=15, env=env)
-    if status.returncode or 'logged in using chatgpt' not in (status.stdout + status.stderr).lower():
+    output = ' '.join((status.stdout + status.stderr).lower().split())
+    if not status.returncode and 'logged in using chatgpt' in output:
+        return {'state': 'chatgpt', 'exitCode': 0}
+    reason = 'not_signed_in'
+    if any(word in output for word in ['keychain', 'keyring', 'credential store']):
+        reason = 'credential_store'
+    elif any(word in output for word in ['permission denied', 'operation not permitted']):
+        reason = 'permission'
+    elif any(word in output for word in ['error loading config', 'error parsing', 'invalid config']):
+        reason = 'configuration'
+    elif 'api key' in output:
+        reason = 'api_mode'
+    return {'state': 'required', 'reason': reason, 'exitCode': status.returncode}
+
+
+def require_chatgpt(binary, env):
+    state = chatgpt_status(binary, env)
+    if state['state'] != 'chatgpt':
         raise ValueError('Нужен вход Codex через ChatGPT. Выполните codex login и выберите свой Plus-аккаунт. Режим API-ключа помощник не использует.')
 
 
@@ -168,7 +200,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
         ancestors = ' '.join(PARENT_ORIGINS)
-        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors " + ancestors + "; base-uri 'none'")
+        policy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors " + ancestors + "; base-uri 'none'"
+        if self.path == '/studio':
+            policy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:; frame-src 'self' about:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        self.send_header('Content-Security-Policy', policy)
         self.end_headers()
         try:
             self.wfile.write(payload)
@@ -182,7 +217,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self.valid_host():
             return self.send(403, {'error': 'Host rejected'})
         if self.path == '/health':
-            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 3})
+            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 4})
+        if self.path == '/studio':
+            return self.send(200, studio_page(), 'text/html; charset=utf-8')
         if self.path != '/':
             return self.send(404, {'error': 'Not found'})
         page = (Path(__file__).parent / 'panel.html').read_text(encoding='utf-8')
@@ -190,9 +227,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send(200, page, 'text/html; charset=utf-8')
 
     def do_POST(self):
+        if self.path == '/studio':
+            if not self.valid_host() or self.headers.get('Origin') not in PARENT_ORIGINS:
+                return self.send(403, {'error': 'Перенос разрешён только из студии.'})
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 20_000_000 or self.headers.get('Content-Type', '').split(';')[0] != 'application/x-www-form-urlencoded':
+                    raise ValueError('Некорректный формат проекта или размер более 20 МБ.')
+                fields = parse_qs(self.rfile.read(length).decode('utf-8'), max_num_fields=2)
+                project = json.loads(fields.get('project', [''])[0])
+                return self.send(200, studio_page(project), 'text/html; charset=utf-8')
+            except (ValueError, UnicodeError) as exc:
+                return self.send(400, {'error': str(exc)})
         if not self.valid_host() or self.headers.get('Origin') != ORIGIN or self.headers.get('X-Alfaprom-Session') != SESSION:
             return self.send(403, {'error': 'Доступ разрешён только подключённому локальному окну студии.'})
-        if self.path not in ['/revise', '/cancel', '/progress']:
+        if self.path not in ['/revise', '/cancel', '/progress', '/auth-status']:
             return self.send(404, {'error': 'Not found'})
         try:
             length = int(self.headers.get('Content-Length', '0'))
@@ -202,6 +251,8 @@ class Handler(BaseHTTPRequestHandler):
             job_id = data.get('jobId', '')
             if not isinstance(job_id, str) or not 10 <= len(job_id) <= 100:
                 raise ValueError('Некорректный идентификатор задания.')
+            if self.path == '/auth-status':
+                return self.send(200, chatgpt_status(codex_binary(), clean_environment()))
             if self.path == '/progress':
                 return self.send(200, progress_snapshot(job_id))
             if self.path == '/cancel':
