@@ -14,15 +14,16 @@ window.addEventListener('message',async event=>{
  origin=event.origin;
  if(event.data.type==='alfaprom.helper.ping'){heartbeat();return}
  if(event.data.type==='alfaprom.cancel'&&event.data.jobId===job?.id){stopJob();return}
- if(event.data.type!=='alfaprom.revise'||job||typeof event.data.jobId!=='string'||typeof event.data.prompt!=='string')return;
- const active={id:event.data.jobId};job=active;status.textContent='Выполняется доработка…';cancel.disabled=false;
+ if(!['alfaprom.revise','alfaprom.audit','alfaprom.edit'].includes(event.data.type)||job||typeof event.data.jobId!=='string'||typeof event.data.prompt!=='string')return;
+ const audit=event.data.type==='alfaprom.audit',path=audit?'/audit':event.data.type==='alfaprom.edit'?'/edit':'/revise';
+ const active={id:event.data.jobId};job=active;status.textContent=audit?'Проверяем 23 критерия…':'Выполняется доработка…';cancel.disabled=false;
  poll=setInterval(progress,1000);
- try{const data=await post('/revise',{jobId:active.id,prompt:event.data.prompt});result=data.html;status.textContent='Доработка завершена. Результат передан в студию.';document.getElementById('download').hidden=false;send({type:'alfaprom.revision.result',jobId:active.id,html:result})}
+ try{const data=await post(path,{jobId:active.id,prompt:event.data.prompt});status.textContent='Результат передан в студию.';if(audit){send({type:'alfaprom.audit.result',jobId:active.id,report:data.report})}else{result=data.html;document.getElementById('download').hidden=false;send({type:'alfaprom.revision.result',jobId:active.id,html:result,seo:data.seo})}}
  catch(error){status.textContent=error.message;send({type:'alfaprom.revision.error',jobId:active.id,error:error.message})}
  finally{clearInterval(poll);job=null;cancel.disabled=true}
 });
 cancel.onclick=stopJob;
 document.getElementById('download').onclick=()=>{const url=URL.createObjectURL(new Blob([result],{type:'text/html'})),link=document.createElement('a');link.href=url;link.download='article-improved.html';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 window.addEventListener('pagehide',()=>{if(job)fetch('/cancel',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','X-Alfaprom-Session':session},body:JSON.stringify({jobId:job.id})}).catch(()=>{})});
-for(const target of parents)if(peer)peer.postMessage({type:'alfaprom.helper.ready',version:3},target);
+// The host responds to the parent's onload ping with the actual server protocol.
 </script></body></html>

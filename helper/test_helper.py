@@ -11,6 +11,24 @@ spec.loader.exec_module(helper)
 
 
 class HelperTests(unittest.TestCase):
+    def test_audit_schema_requires_all_23_criteria(self):
+        schema = helper.response_schema('audit')
+        self.assertEqual(schema['properties']['criteria']['minItems'], 23)
+        self.assertEqual(schema['properties']['criteria']['maxItems'], 23)
+        self.assertFalse(schema['additionalProperties'])
+        self.assertEqual(set(schema['required']), {'version', 'fingerprint', 'criteria', 'issues', 'facts'})
+
+    def test_edit_schema_keeps_seo_with_article(self):
+        schema = helper.response_schema('edit')
+        self.assertEqual(set(schema['required']), {'html', 'seo'})
+        self.assertEqual(set(schema['properties']['seo']['required']), {'title', 'description', 'h1'})
+
+    def test_unknown_operation_does_not_start_inference(self):
+        with patch.object(helper.subprocess, 'Popen') as popen:
+            with self.assertRaises(ValueError):
+                helper.execute_task('a valid prompt', 'unknown-test-123', 'unknown')
+            popen.assert_not_called()
+
     def test_api_credentials_are_not_inherited(self):
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test', 'CODEX_API_KEY': 'test', 'OPENAI_BASE_URL': 'test'}):
             result = helper.clean_environment()
@@ -58,7 +76,7 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 5})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 6})])
 
     def test_progress_contains_no_article_or_account_data(self):
         helper.set_progress('progress-test', 'generating')
