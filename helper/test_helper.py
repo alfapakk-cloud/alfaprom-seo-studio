@@ -43,7 +43,7 @@ class HelperTests(unittest.TestCase):
             target = Path(command[command.index('--output-last-message') + 1])
             target.write_text('{"html":"<h2>Раздел</h2><p>Тестовый результат.</p>"}', encoding='utf-8')
             return SimpleNamespace(pid=999999, returncode=0, communicate=lambda *args, **kw: ('', ''))
-        with patch.object(helper, 'codex_binary', return_value='codex'), patch.object(helper, 'require_chatgpt'), patch.object(helper.subprocess, 'Popen', side_effect=fake_process):
+        with patch.object(helper, 'codex_binary', return_value='codex'), patch.object(helper, 'require_chatgpt', side_effect=ValueError('GUI config unavailable')), patch.object(helper.subprocess, 'Popen', side_effect=fake_process):
             self.assertIn('Тестовый результат', helper.execute_revision('Тест', 'test-job-001'))
         self.assertFalse(helper.ACTIVE)
 
@@ -58,7 +58,7 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 4})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 5})])
 
     def test_progress_contains_no_article_or_account_data(self):
         helper.set_progress('progress-test', 'generating')

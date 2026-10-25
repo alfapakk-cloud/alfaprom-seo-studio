@@ -123,7 +123,10 @@ def require_chatgpt(binary, env):
 def execute_revision(prompt, job_id):
     set_progress(job_id, 'authenticating')
     binary, env = codex_binary(), clean_environment()
-    require_chatgpt(binary, env)
+    # `login status` loads user configuration, whereas this runner deliberately
+    # ignores it. A GUI-inaccessible config must not masquerade as missing auth.
+    # The actual exec enforces forced_login_method="chatgpt" before any model call;
+    # provider/key overrides are disabled and API credentials are removed below.
     with LOCK:
         if job_id in CANCELLED:
             CANCELLED.discard(job_id)
@@ -217,7 +220,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.valid_host():
             return self.send(403, {'error': 'Host rejected'})
         if self.path == '/health':
-            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 4})
+            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 5})
         if self.path == '/studio':
             return self.send(200, studio_page(), 'text/html; charset=utf-8')
         if self.path != '/':

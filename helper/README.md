@@ -19,7 +19,7 @@
 
 ## Стоимость и ограничения
 
-Используется ChatGPT-вход официального Codex. Помощник перед каждым заданием проверяет `codex login status`, запрещает API-режим, убирает API-ключи из окружения дочернего процесса и принудительно выбирает ChatGPT-аутентификацию. При ошибке лимита запрос останавливается, другой платный провайдер не выбирается. Помощник не покупает кредиты, не меняет настройки подписки или её оплаты. Доступность и лимиты определяются аккаунтом OpenAI.
+Используется ChatGPT-вход официального Codex. Помощник принудительно задаёт `forced_login_method="chatgpt"` в реальном запросе, запрещает API-режим, убирает API-ключи из окружения дочернего процесса и принудительно выбирает ChatGPT-аутентификацию. При ошибке лимита запрос останавливается, другой платный провайдер не выбирается. Помощник не покупает кредиты, не меняет настройки подписки или её оплаты. Доступность и лимиты определяются аккаунтом OpenAI.
 
 Codex по подписке не равен открытию той же истории обычного ChatGPT-чата: это отдельный запрос к доступной в Codex модели. История и память чатов не переносятся; полный контекст статьи входит в задание. Автоматически подтвердить истинность фактов такой запрос не может.
 
@@ -57,3 +57,6 @@ Some browsers do not deliver the HTTPS-to-loopback iframe connection. The explic
 The first transfer preserves the full project, including queue and quality snapshots. If a local project already exists, it stays selected; the incoming project can be accepted explicitly and the previous local project is backed up for restoration. Website and local browser storage are separate. Continue editing locally after transfer, and export JSON backups. There is no automatic synchronization back to GitHub Pages.
 
 The installed app bundles studio.html. Public endpoints remain health metadata and page content; generation and account diagnostics require the local session nonce. The native process was restarted by the user and verified as protocol 4 with ChatGPT authentication. Regression checks: 74 browser scenarios, 14 Python tests, and a complete mock transfer/revision cycle without inference. Real revision validation is tracked in the local project audit.
+
+
+1.3.1 / protocol 5 removes the misleading login-status preflight from generation. The status command reads user configuration that may be unavailable to a background GUI process; actual exec ignores that configuration and enforces ChatGPT login directly. API keys are still removed from the environment, the provider is fixed to OpenAI, and there is no API fallback.

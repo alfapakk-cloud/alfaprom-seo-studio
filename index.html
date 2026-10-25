@@ -804,7 +804,7 @@ function qeStartPlusRevision(){
  qeHelperJob.tick=setInterval(qeUpdateHelperUI,1000);
  qeHelperJob.deadline=setTimeout(()=>qeFinishHelperError('Помощник не вернул результат за 16 минут. Остановите его через меню α SEO перед повторным запуском. Исходная статья сохранена.'),960000);
  qeHelperJob.timer=setTimeout(()=>{if(qeHelperJob&&!qeHelperJob.sent)qeFinishHelperError('Помощник не подключился. Запустите его, проверьте подключение и повторите доработку. Если установлена прежняя версия, обновите помощника до 1.3.');},15000);
- if(qeHelperState!=='connected')qeEnsureHelper(true);qeSendHelperJob();renderCriteria();
+ qeEnsureHelper(true);qeSendHelperJob();renderCriteria();
 }
 function qeCancelPlusRevision(){const job=qeHelperJob;if(!job)return;if(!job.sent)return qeFinishHelperError('Подключение остановлено. Исходная статья сохранена.');job.cancelling=true;qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeClearHelperJob(){const job=qeHelperJob;if(job){clearTimeout(job.timer);clearTimeout(job.deadline);clearInterval(job.tick)}qeHelperJob=null;return job}
