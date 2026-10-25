@@ -805,7 +805,15 @@ function qeSendHelperJob(){const job=qeHelperJob;if(!job||job.sent||qeHelperStat
 function qeStartPlusRevision(){qeStartQualityCycle('cycle')}
 function qeCancelPlusRevision(){const job=qeHelperJob;if(!job)return;if(!job.sent)return qeFinishHelperError('Подключение остановлено. Исходная статья сохранена.');job.cancelling=true;qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeClearHelperJob(){const job=qeHelperJob;if(job){clearTimeout(job.timer);clearTimeout(job.deadline);clearInterval(job.tick)}qeHelperJob=null;return job}
-function qeFinishHelperError(message){const job=qeClearHelperJob();qeHelperFinished=null;if(job?.mode&&job.draft?.content!==job.sourceContent&&qeQualitySourceCurrent(job)){qeRevisionCandidate=qeQualityCandidate(job);message+=' Промежуточный вариант сохранён для просмотра; его проверка могла не завершиться.'}renderCriteria();qeError(message)}
+function qeFinishHelperError(message){
+ const job=qeClearHelperJob();qeHelperFinished=null;
+ if(job?.mode&&qeQualitySourceCurrent(job)){
+  const changed=job.draft.content!==job.sourceContent||JSON.stringify(qeSeo(job.draft))!==JSON.stringify(job.sourceSeo);
+  if(changed){qeRevisionCandidate=qeQualityCandidate(job);message+=' Промежуточный вариант сохранён для просмотра; его проверка могла не завершиться.'}
+  else if(qeCurrent(job.draft)&&job.draft.quality.review){get().quality=job.draft.quality;save(true);message+=' Полученный редакционный отчёт сохранён.'}
+ }
+ renderCriteria();qeError(message);
+}
 function qeDownloadHelperRecovery(){if(qeHelperRecovery)download('article-improved.html',qeHelperRecovery,'text/html')}
 function qeHandleHelperMessage(event){
  if(event.origin!==QE_HELPER_ORIGIN||!qeHelperFrame||event.source!==qeHelperFrame.contentWindow||!event.data)return;
