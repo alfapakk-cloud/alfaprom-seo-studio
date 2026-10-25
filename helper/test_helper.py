@@ -53,6 +53,21 @@ class HelperTests(unittest.TestCase):
                 helper.execute_revision('Тест', 'test-job-002')
         self.assertFalse(helper.ACTIVE)
 
+    def test_native_health_check_returns_only_service_metadata(self):
+        calls = []
+        fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
+        helper.Handler.do_GET(fake)
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 2})])
+
+    def test_native_shutdown_stops_active_generation(self):
+        helper.ACTIVE['test-active-job'] = SimpleNamespace(pid=999999, poll=lambda: None)
+        try:
+            with patch.object(helper.os, 'killpg') as kill:
+                helper.stop_children()
+                kill.assert_called_once_with(999999, helper.signal.SIGTERM)
+        finally:
+            helper.ACTIVE.clear()
+
 
 if __name__ == '__main__':
     unittest.main()

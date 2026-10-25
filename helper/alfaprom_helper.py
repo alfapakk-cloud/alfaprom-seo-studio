@@ -121,6 +121,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.valid_host():
             return self.send(403, {'error': 'Host rejected'})
+        if self.path == '/health':
+            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 2})
         if self.path != '/':
             return self.send(404, {'error': 'Not found'})
         page = (Path(__file__).parent / 'panel.html').read_text(encoding='utf-8')
@@ -165,13 +167,27 @@ class Handler(BaseHTTPRequestHandler):
 
 
 JOB_LOCK = threading.Lock()
+def stop_children():
+    with LOCK:
+        for process in list(ACTIVE.values()):
+            if process.poll() is None:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+
+
 if __name__ == '__main__':
     print(f'Помощник АЛЬФАПРОМ запущен: {ORIGIN}')
-    print('Только ChatGPT-вход Codex. API-ключи не используются. Для остановки закройте это окно или нажмите Ctrl+C.')
+    print('Только ChatGPT-вход Codex. API-ключи не используются.')
+    server = ThreadingHTTPServer(('127.0.0.1', PORT), Handler)
+    def terminate(_signal, _frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, terminate)
     try:
-        ThreadingHTTPServer(('127.0.0.1', PORT), Handler).serve_forever()
+        server.serve_forever()
     except KeyboardInterrupt:
-        with LOCK:
-            for process in ACTIVE.values():
-                if process.poll() is None:
-                    os.killpg(process.pid, signal.SIGTERM)
+        pass
+    finally:
+        stop_children()
+        server.server_close()
