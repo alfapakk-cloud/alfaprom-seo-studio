@@ -19,16 +19,16 @@ shutil.copytree(ROOT / 'helper/lib', resources / 'helper/lib', dirs_exist_ok=Tru
 for library in (resources / 'helper/lib').glob('*.dylib'):
     subprocess.run(['codesign', '--force', '--sign', '-', '--timestamp=none', str(library)], check=True)
 shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
-# The native page is served with no-store; keep its script URL compatible with an already running protocol-7 process.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.5.2', 'generation.js'), encoding='utf-8')
+# UI updates use the existing protocol-8 backend and do not change sign-in settings.
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.6.0', 'generation.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.5.2',
-    'CFBundleVersion': '8',
+    'CFBundleShortVersionString': '1.6.0',
+    'CFBundleVersion': '9',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],
@@ -46,3 +46,4 @@ with zipfile.ZipFile(ROOT / 'alfaprom-mac-helper.zip', 'w', zipfile.ZIP_DEFLATED
     for path in APP.rglob('*'):
         archive.write(path, str(Path(APP.name) / path.relative_to(APP)))
 print(APP)
+
