@@ -24,3 +24,5 @@
 
  await test('После успешного продолжения старое сообщение об остановке убирается',()=>{const a=fresh(),d=sgParseGeneration(sgFixture(a),a,{profile:'short',images:true});d.lastError='Генерация остановлена';const job={kind:'generation',articleId:a.id,draft:d};qeHelperJob=job;sgFinish(job,'ready');assert(!a.generationDraft.lastError&&a.generationDraft.status==='ready','Старая ошибка осталась после завершения')});
  await test('Изображения не запускаются при несоответствии объёма',()=>{const a=fresh(),d=sgParseGeneration(sgFixture(a),a,{profile:'short',images:true});d.chars=2500;a.generationDraft=d;sgStart(true);assert(!qeHelperJob,'Запущены изображения до исправления объёма')});
+
+ await test('В генераторе есть явный переход к локальному помощнику',()=>{fresh();sgRenderGeneration();assert(document.querySelector('#generationBrief button[onclick="qeOpenLocalStudio()"]'),'Переход спрятан в другом разделе');const before=qeHelperState;qeHelperState='offline';assert(sgConnectionText().includes('Откройте студию на этом Mac'),'Показан бесполезный совет перезапуска');qeHelperState=before});
