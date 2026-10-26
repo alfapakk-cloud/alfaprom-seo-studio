@@ -15,17 +15,20 @@ macos.mkdir(parents=True, exist_ok=True)
 (resources / 'helper').mkdir(parents=True, exist_ok=True)
 for name in ['alfaprom_helper.py', 'panel.html', 'media.py']:
     shutil.copy2(ROOT / 'helper' / name, resources / 'helper' / name)
+shutil.copytree(ROOT / 'helper/lib', resources / 'helper/lib', dirs_exist_ok=True)
+for library in (resources / 'helper/lib').glob('*.dylib'):
+    subprocess.run(['codesign', '--force', '--sign', '-', '--timestamp=none', str(library)], check=True)
 shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
 # The native page is served with no-store; keep its script URL compatible with an already running protocol-7 process.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.5.1', 'generation.js'), encoding='utf-8')
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.5.2', 'generation.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.5',
-    'CFBundleVersion': '7',
+    'CFBundleShortVersionString': '1.5.2',
+    'CFBundleVersion': '8',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

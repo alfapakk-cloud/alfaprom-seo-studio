@@ -66,7 +66,7 @@ function sgOperation(job,operation,prompt,reconnect=false){
  job.deadline=setTimeout(()=>{if(qeHelperJob===job){qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);sgFail('Текущий этап превысил 16 минут. Готовые результаты сохранены.');}},960000);
  if(reconnect)qeEnsureHelper(true);sgSendJob();sgRenderGeneration();
 }
-function sgSendJob(){const j=qeHelperJob;if(j?.kind!=='generation'||j.sent||qeHelperState!=='connected')return;if(sgProtocol<7)return sgFail('Нужен помощник α SEO 1.5: прежняя версия не поддерживает генерацию статьи и изображений.');j.sent=true;clearTimeout(j.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.'+j.operation,jobId:j.id,prompt:j.prompt},QE_HELPER_ORIGIN);sgUpdateUI()}
+function sgSendJob(){const j=qeHelperJob;if(j?.kind!=='generation'||j.sent||qeHelperState!=='connected')return;if(sgProtocol<8)return sgFail('Для надёжного сохранения WebP нужен помощник α SEO 1.5.2. Перезапустите помощника после обновления. Текст черновика сохранён.');j.sent=true;clearTimeout(j.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.'+j.operation,jobId:j.id,prompt:j.prompt},QE_HELPER_ORIGIN);sgUpdateUI()}
 function sgPersist(job){const a=db.articles.find(x=>x.id===job.articleId);if(a&&job.draft){a.generationDraft=job.draft;save(true)}}
 function sgNextImage(job,reconnect=false){
  if(qeHelperJob!==job)return;if(job.cancelling)return sgFinish(job,'paused');
@@ -98,7 +98,7 @@ async function sgHandleJobMessage(job,data){
   if(job.operation==='illustrate'){
    if(!sgExecutionOK(data.result))throw Error('Не подтверждён режим GPT-6.1 Sol High через ChatGPT.');
    const v=job.draft.visuals.find(x=>x.id===job.visualId);job.stage='converting';sgUpdateUI();const blob=await sgConvertWebp(data.result,v.kind==='cover');job.stage='saving';sgUpdateUI();
-   const meta=await sgRequestAsset('save',{base64:await sgBlobBase64(blob)});Object.assign(v,meta,{status:'review',createdAt:new Date().toISOString()});sgCacheAsset(meta.assetId,blob);sgPersist(job);
+   const meta=await sgRequestAsset('save',{base64:await sgBlobBase64(blob)});Object.assign(v,meta,{status:'review',createdAt:new Date().toISOString()});const webp=blob.type==='image/webp'?blob:(await sgGetAsset(meta.assetId)).blob;sgCacheAsset(meta.assetId,webp);sgPersist(job);
    if(job.cancelling)return sgFinish(job,'paused');return sgNextImage(job);
   }
   const review=qeValidateReport(data.report,job.auditArticle);qeInstallReview(job.auditArticle,review,true);job.draft.quality=job.auditArticle.quality;sgFinish(job,'ready');
@@ -110,7 +110,9 @@ async function sgConvertWebp(data,cover=false){
  if(!image.naturalWidth||image.naturalWidth*image.naturalHeight>20000000)throw Error('Изображение слишком большое для обработки.');
  const ratio=cover?21/9:3/2,w=Math.min(cover?1680:1280,image.naturalWidth),h=Math.round(w/ratio),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
  const srcRatio=image.naturalWidth/image.naturalHeight,sw=srcRatio>ratio?image.naturalHeight*ratio:image.naturalWidth,sh=srcRatio>ratio?image.naturalHeight:image.naturalWidth/ratio;canvas.getContext('2d').drawImage(image,(image.naturalWidth-sw)/2,(image.naturalHeight-sh)/2,sw,sh,0,0,w,h);
- const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.86));if(!blob||blob.type!=='image/webp')throw Error('Браузер не поддерживает создание WebP. Текст сохранён; продолжите очередь в актуальном Chrome или Edge.');return blob;
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.86));if(blob?.type==='image/webp')return blob;
+ if(sgProtocol<8)throw Error('Для этого браузера нужен помощник 1.5.2 с локальной конвертацией WebP. Текст сохранён.');
+ const pixels=canvas.getContext('2d').getImageData(0,0,w,h).data,header=new Uint8Array(16);header.set(new TextEncoder().encode('APRGBA01'));const size=new DataView(header.buffer);size.setUint32(8,w,true);size.setUint32(12,h,true);return new Blob([header,pixels],{type:'application/x-alfaprom-rgba'});
 }
 function sgBlobBase64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=()=>reject(Error('Не удалось прочитать WebP.'));r.readAsDataURL(blob)})}
 function sgRequestAsset(action,payload){return new Promise((resolve,reject)=>{const id=crypto.randomUUID(),r={id,action,payload,resolve,reject,sent:false};r.timer=setTimeout(()=>{sgAssetRequests.delete(id);reject(Error('Помощник не вернул файл изображения. Проверьте подключение.'))},25000);sgAssetRequests.set(id,r);qeEnsureHelper();sgFlushAssets()})}

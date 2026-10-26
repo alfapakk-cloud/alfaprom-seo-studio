@@ -69,5 +69,28 @@ class MediaTests(unittest.TestCase):
                 media.read_generated_image(str(allowed / 'escape.png'))
 
 
+    def test_rgba_fallback_encodes_real_webp_and_saves(self):
+        raw = b'APRGBA01' + struct.pack('<II', 32, 20) + bytes([40, 120, 210, 255]) * (32 * 20)
+        with tempfile.TemporaryDirectory() as folder, patch.object(media, 'ASSET_ROOT', Path(folder)):
+            result = media.save_asset(base64.b64encode(raw).decode('ascii'))
+            stored = media.read_asset(result['assetId'])
+            data = base64.b64decode(stored['base64'])
+            self.assertEqual(media.webp_dimensions(data), (32, 20))
+            self.assertEqual(data[:4], b'RIFF')
+            self.assertNotIn('base64', result)
+
+    def test_rgba_rejects_truncated_oversized_and_inconsistent_buffers(self):
+        for raw in [b'APRGBA01', b'APRGBA01' + struct.pack('<II', 0, 4), b'APRGBA01' + struct.pack('<II', 2000, 1) + b'x' * 8000, b'APRGBA01' + struct.pack('<II', 32, 20) + b'x' * 12]:
+            with patch.object(media.ctypes, 'CDLL') as load:
+                with self.assertRaises(ValueError):
+                    media.encode_rgba(raw)
+                load.assert_not_called()
+
+    def test_full_cover_buffer_fits_route_limit_and_encodes(self):
+        raw = b'APRGBA01' + struct.pack('<II', 1680, 720) + bytes([200, 100, 45, 255]) * (1680 * 720)
+        self.assertLess(len(base64.b64encode(raw)), 8_000_000)
+        self.assertEqual(media.webp_dimensions(media.encode_rgba(raw)), (1680, 720))
+
+
 if __name__ == '__main__':
     unittest.main()

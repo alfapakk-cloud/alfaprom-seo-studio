@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Local generated media storage; no third-party service or image API."""
 import base64
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -39,6 +40,37 @@ def webp_dimensions(data):
     return dimensions
 
 
+
+def encode_rgba(data):
+    """Encode a bounded, already cropped canvas buffer without browser WebP support."""
+    if len(data) < 20 or data[:8] != b'APRGBA01':
+        raise ValueError('Некорректные пиксели изображения.')
+    width, height = struct.unpack('<II', data[8:16])
+    if not (1 <= width <= 1680 and 1 <= height <= 1280) or width * height > 2_200_000 or len(data) != 16 + width * height * 4:
+        raise ValueError('Некорректные размеры или длина изображения.')
+    try:
+        encoder = ctypes.CDLL(str(Path(__file__).with_name('lib') / 'libwebp.7.dylib'))
+    except OSError:
+        raise ValueError('Нужен помощник 1.5.2 с локальным WebP-кодировщиком. Текст сохранён.')
+    pointer = ctypes.POINTER(ctypes.c_uint8)
+    encoder.WebPEncodeRGBA.argtypes = [pointer, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_float, ctypes.POINTER(pointer)]
+    encoder.WebPEncodeRGBA.restype = ctypes.c_size_t
+    encoder.WebPFree.argtypes = [ctypes.c_void_p]
+    encoder.WebPFree.restype = None
+    pixels = (ctypes.c_uint8 * (len(data) - 16)).from_buffer_copy(data[16:])
+    output = pointer()
+    size = encoder.WebPEncodeRGBA(pixels, width, height, width * 4, 86.0, ctypes.byref(output))
+    if not size or not output:
+        raise ValueError('Локальная конвертация WebP не завершилась. Текст сохранён.')
+    try:
+        result = ctypes.string_at(output, size)
+    finally:
+        encoder.WebPFree(output)
+    if webp_dimensions(result) != (width, height):
+        raise ValueError('Размеры WebP после конвертации не совпали.')
+    return result
+
+
 def asset_path(asset_id):
     if not isinstance(asset_id, str) or not re.fullmatch('[a-f0-9]{32}', asset_id):
         raise ValueError('Некорректный идентификатор изображения.')
@@ -56,6 +88,8 @@ def save_asset(encoded):
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, TypeError):
         raise ValueError('Некорректные данные изображения.')
+    if data.startswith(b'APRGBA01'):
+        data = encode_rgba(data)
     width, height = webp_dimensions(data)
     ASSET_ROOT.mkdir(parents=True, exist_ok=True)
     asset_id = secrets.token_hex(16)

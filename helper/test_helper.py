@@ -81,7 +81,7 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 7})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 8})])
 
     def test_progress_contains_no_article_or_account_data(self):
         helper.set_progress('progress-test', 'generating')

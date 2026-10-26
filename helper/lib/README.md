@@ -1,0 +1,1 @@
+Bundled macOS arm64 libwebp encoder and libsharpyuv, from the preinstalled Codex workspace runtime Pillow 12.3.0 distribution. Used only for local RGBA → WebP conversion. No network, API or Python package installation. See LICENSE.libwebp.txt.
