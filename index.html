@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Студия АЛЬФАПРОМ · 1.6.0</title>
+<title>SEO-Студия АЛЬФАПРОМ · 1.6.1</title>
 <style>
 :root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 <body>
 <div class="app">
 <aside class="side">
-  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.6.0</div></div>
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.6.1</div></div>
   <div class="nav">
     <button class="active" data-view="plan">▣ SEO-план</button>
     <button data-view="article">✎ Статья</button>
@@ -112,7 +112,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
       <div style="display:flex;gap:6px;margin-bottom:10px"><button id="editorHtmlBtn" class="btn primary" onclick="setEditorMode('html')">HTML</button><button id="editorTextBtn" class="btn" onclick="setEditorMode('text')">Текст</button></div>
       <div class="actions" style="margin-bottom:10px">
         <button class="btn" onclick="importArticleFromFile()">↓ Импортировать статью из файла</button><input id="articleFileInput" type="file" accept=".html,.htm,.txt,.md,text/html,text/plain,text/markdown" class="hidden" onchange="handleArticleFile(this.files[0])">
-        <button class="btn" onclick="uiOpenPreview()">Посмотреть итоговую статью</button>
+        <button class="btn" onclick="uiOpenPreview('current')">Посмотреть итоговую статью</button>
       </div>
       <textarea id="content" style="width:100%;display:block;min-height:700px;font-family:ui-monospace,monospace;resize:vertical" oninput="updateField('content',this.value)"></textarea><div id="editorTextView" class="article hidden" style="max-width:none;min-height:700px;margin:0"></div>
     </div>
@@ -140,7 +140,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
  <div class="card"><h2>Сохранить результат</h2><p class="muted">Скачайте статью для публикации и отдельно сохраните копию проекта.</p>
  <div class="two"><div class="card"><h3>Статья с изображениями</h3><p>ZIP: итоговый HTML, реальные изображения WebP и SEO-поля выбранной статьи.</p><button class="btn primary" onclick="sgDownloadPackage()">Скачать статью с изображениями</button><p class="small muted">Включаются уже созданные изображения. Для полного пакета сначала завершите их создание.</p></div>
  <div class="card"><h3>Копия проекта: темы, тексты и настройки</h3><p>JSON для сохранения очереди, статей, настроек и результатов проверки.</p><button class="btn primary" onclick="downloadJSON()">Скачать копию проекта</button><p class="small muted">Файлы изображений сохраняются отдельно в ZIP со статьёй.</p></div></div>
- <div class="actions" style="margin-top:16px"><button class="btn" onclick="uiOpenPreview()">Посмотреть итоговую статью</button></div>
+ <div class="actions" style="margin-top:16px"><button class="btn" onclick="uiOpenPreview('current')">Посмотреть итоговую статью</button></div>
  <details class="ui-details"><summary>Отдельные файлы</summary><div class="actions"><button class="btn" onclick="downloadHTML()">Скачать HTML</button><button class="btn" onclick="downloadSEO()">Скачать SEO.txt</button></div></details>
  <p id="exportStatus" role="status" hidden></p></div>
 </section>
@@ -168,8 +168,9 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 
 <script>
 const KEY='alfaprom_seo_studio_mvp_v01';
-let uiEditorMode='text',uiPreviewMode='current',uiSaveError=false,uiSaved=false,uiHelperRenderedState=null;
+let uiEditorMode='text',uiPreviewMode='auto',uiSaveError=false,uiSaved=false,uiHelperRenderedState=null;
 const uiFactPageSize=10;
+let uiPreviewDocument=null;
 const criteria=[
 'Высокий поисковый потенциал','Большой экспертный материал','Фактическая точность','Проверка источников','SEO-ключи','SEO-структура','Внутренняя перелинковка','Оригинальность','Фотографии','Ненавязчивая коммерция','Целевой трафик → продажа','Без каннибализации','Практическая ценность','Экономика и расчёты','Варианты решений','Пошаговые алгоритмы','Практические чек-листы','Таблицы и сравнения','Реальный FAQ','Связь задачи с оборудованием','Экспертный вывод','Экспертность, достоверность и доверие — автор/компания, практическая компетентность, проверяемые источники, актуальность данных, отсутствие неподтверждённых утверждений.','Премиальное оформление текста'
 ];
@@ -1059,7 +1060,7 @@ function qeRenderText(a){
  const intro=!active?'Проверка относится к конкретной версии текста и SEO-задания.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?'Откройте требующие внимания критерии и подтвердите данные по источникам.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.';
  return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ТЕКУЩЕЙ СТАТЬИ</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p><div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${passed}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${state.bad.length}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${state.unknown.length}</b>Нужны данные</div><div class="qe-metric"><b>${na}</b>Не применимо</div></div>${qeBadge('stage')} <span class="qe-note">Изображения — перед публикацией</span><div class="qe-next">${uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
  <div class="card qe-panel">${qeRenderIssues(a)}</div><div class="card qe-panel" id="qeCriteriaList">${qeRenderCriteria(a,state.results)}</div><div class="card qe-panel" id="qeFacts">${qeRenderFacts(a)}</div></div>
- <aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Проверить 23 критерия заново</button><button class="btn qe-wide-btn" onclick="uiOpenPreview()">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Спрос, факты, источники, оригинальность, пересечения с публикациями и доверие требуют подтверждённых данных.</p></aside></div>`;
+ <aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Проверить 23 критерия заново</button><button class="btn qe-wide-btn" onclick="uiOpenPreview('current')">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Спрос, факты, источники, оригинальность, пересечения с публикациями и доверие требуют подтверждённых данных.</p></aside></div>`;
 }
 function qeRenderFinal(a){
  const checks=qeFinalChecks(a),q=a.quality,f=q?.final,active=qeCurrent(a)&&f?.snapshot===qeFinalFingerprint(a),ready=qeFinalReady(a),approved=ready&&f?.approvedAt;
@@ -1202,11 +1203,29 @@ function visualField(i,k,v){const a=get(),visual=a.visuals[i];if(visual.assetId&
 function approveVisual(i){get().visuals[i].status='approved';save();toast('Визуал утверждён и привязан к статье')}
 function deleteVisual(i){get().visuals.splice(i,1);save()}
 function renderPreview(){
- const a=get();if(!a)return;const d=sgValidDraftSafe(a.generationDraft)?a.generationDraft:null;if(uiPreviewMode==='draft'&&!d)uiPreviewMode='current';
- const draft=uiPreviewMode==='draft',version=draft?d.id.slice(0,8):qeFingerprint(a).slice(0,8),seo=draft?d.seo:{...qeSeo(a),h1:a.h1||a.topic},content=draft?sgAssemble(d):a.content||'';
- const target=document.getElementById('preview');target.innerHTML=`<div class="card preview-controls"><h2>${draft?'Новый вариант':'Текущая статья'}</h2><p class="muted">${esc(a.topic)} · Версия ${version}</p><div class="actions"><button class="btn ${!draft?'primary':''}" onclick="uiPreviewMode='current';renderPreview()">Текущая статья</button>${d?`<button class="btn ${draft?'primary':''}" onclick="uiPreviewMode='draft';renderPreview()">Новый вариант${d.appliedAt?' · применён':''}</button>`:''}<button class="btn" onclick="uiOpenEditor()">Редактировать текущую статью</button></div><p class="small muted">${draft?'Просмотр черновика. Текущая статья заменится только после применения.':'Просмотр итогового HTML для экспорта. Изображения отображаются из сохранённых файлов помощника.'}</p></div><iframe class="publication-preview" title="${draft?'Новый вариант':'Текущая статья'} — итоговый HTML" sandbox=""></iframe>`;
- const display=typeof sgDisplayHtml==='function'?sgDisplayHtml(content,draft?d.visuals:a.visuals||[]):content;target.querySelector('iframe').srcdoc=uiPublicationDocument(seo,display);if(typeof sgLoadAssets==='function')sgLoadAssets(a);
+ const a=get();if(!a)return;const d=sgValidDraftSafe(a.generationDraft)?a.generationDraft:null,applied=!!d&&sgDraftApplied(a,d);
+ const draft=!!d&&(uiPreviewMode==='draft'||uiPreviewMode==='auto'&&!applied&&d.sourceFingerprint===qeFingerprint(a));
+ const version=draft?d.id.slice(0,8):qeFingerprint(a).slice(0,8),seo=draft?d.seo:{...qeSeo(a),h1:a.h1||a.topic},content=draft?sgAssemble(d):a.content||'',visuals=draft?d.visuals:a.visuals||[];
+ const stale=draft&&d.sourceFingerprint!==qeFingerprint(a),valid=draft&&d.chars>=SG_PROFILES[d.profile].min&&d.chars<=SG_PROFILES[d.profile].max;
+ const target=document.getElementById('preview');target.innerHTML=`<div class="card preview-controls"><h2>${draft?'Новый вариант':'Текущая статья'}</h2><p class="muted">${esc(a.topic)} · Версия ${version}</p><div class="actions"><button class="btn ${!draft?'primary':''}" onclick="uiPreviewMode='current';renderPreview()">Текущая статья</button>${d?`<button class="btn ${draft?'primary':''}" onclick="uiPreviewMode='draft';renderPreview()">Новый вариант${applied?' · применён':''}</button>`:''}${draft?`<button class="btn primary" onclick="sgApplyDraft()" ${stale||applied||qeHelperJob||!valid?'disabled':''}>${applied?'Уже применён':'Применить новый вариант'}</button>`:''}<button class="btn" onclick="uiOpenEditor()">Редактировать текущую статью</button></div><p class="small muted">${draft?(applied?'Этот вариант уже используется в редакторе, проверке качества и экспорте.':'Это сохранённый черновик. «Применить новый вариант» обновит текущий текст, SEO-поля и изображения в редакторе, проверке качества и экспорте. Предыдущая версия сохранится. Публикация на сайте выполняется отдельно.'):'Эта версия используется в редакторе, проверке качества и экспорте.'}</p>${stale?'<p class="qe-notice">Текущая статья изменилась после генерации. Применение этого черновика недоступно.</p>':''}<p id="uiPreviewMediaStatus" class="small muted" role="status"></p><button class="btn small" id="uiPreviewMediaRetry" hidden onclick="uiRetryPreviewMedia()">Повторить загрузку изображений</button></div><iframe id="uiPublicationPreview" class="publication-preview" title="${draft?'Новый вариант':'Текущая статья'} — итоговый HTML" sandbox=""></iframe>`;
+ const frame=document.getElementById('uiPublicationPreview');uiPreviewDocument={frame,seo,content,visuals,waiting:false};uiWritePreviewDocument(uiPreviewDocument);
+ if(typeof sgLoadAssets==='function')sgLoadAssets(a);uiRefreshPreviewMedia();
 }
+function uiWritePreviewDocument(state){
+ if(uiPreviewDocument!==state||!state.frame.isConnected)return;
+ const display=typeof sgDisplayHtml==='function'?sgDisplayHtml(state.content,state.visuals,true):state.content,html=uiPublicationDocument(state.seo,display);
+ if(state.frame.srcdoc!==html)state.frame.srcdoc=html;
+ const total=state.visuals.length,created=state.visuals.filter(v=>v.assetId).length,loaded=typeof sgAssets==='undefined'?0:state.visuals.filter(v=>sgAssets.get(v.assetId)?.previewUrl).length,errors=typeof sgAssetErrors==='undefined'?[]:state.visuals.filter(v=>sgAssetErrors.has(v.assetId));
+ const status=document.getElementById('uiPreviewMediaStatus');if(status)status.textContent=total?'Изображения: '+loaded+' из '+total+' загружены.'+(created<total?' Остальные появятся после их создания.':loaded<created?(qeHelperState==='connected'?' Загружаем сохранённые файлы…':' Для загрузки сохранённых файлов подключите помощника α SEO.'):'')+(errors.length?' Не удалось загрузить файлов: '+errors.length+'.':''):'';
+ const retry=document.getElementById('uiPreviewMediaRetry');if(retry)retry.hidden=!errors.length;
+}
+function uiRefreshPreviewMedia(){
+ const state=uiPreviewDocument;if(!state||!state.frame.isConnected||state.waiting||typeof sgGetAsset!=='function'||document.getElementById('view-preview').classList.contains('hidden'))return;
+ const visuals=state.visuals.filter(v=>v.assetId&&!sgAssetErrors.has(v.assetId)&&(sgAssets.has(v.assetId)||qeHelperState==='connected'));if(!visuals.length){uiWritePreviewDocument(state);return}
+ state.waiting=true;
+ state.ready=Promise.allSettled(visuals.map(async v=>{const asset=await sgGetAsset(v.assetId);await asset.previewReady})).then(results=>{if(uiPreviewDocument!==state||!state.frame.isConnected)return;results.forEach((r,i)=>{if(r.status==='rejected')sgAssetErrors.set(visuals[i].assetId,r.reason?.message||'Файл недоступен')});state.waiting=false;uiWritePreviewDocument(state)});
+}
+function uiRetryPreviewMedia(){const state=uiPreviewDocument;if(!state)return;state.visuals.forEach(v=>sgAssetErrors.delete(v.assetId));uiRefreshPreviewMedia()}
 function htmlExport(){const a=get();return uiPublicationDocument({...qeSeo(a),h1:a.h1||a.topic},a.content||'')}
 function download(name,text,type='text/plain'){let b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
 function downloadHTML(){download('article.html',htmlExport(),'text/html');uiExportNotice('HTML сформирован. Для сохранения изображений скачайте ZIP со статьёй.')}
@@ -1230,7 +1249,7 @@ function show(view){
  renderAll();
 }
 function renderAll(){renderPlan();renderArticle();renderCriteria();renderVisuals();renderPreview();uiRenderSaveStatus();uiRenderHelperStatus();document.getElementById('studioWorkspaceNotice').innerHTML=qeLocalWorkspaceNotice()}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>b.dataset.view==='preview'?uiOpenPreview():show(b.dataset.view));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('[id^=tab-]').forEach(x=>x.classList.add('hidden'));document.getElementById('tab-'+b.dataset.tab).classList.remove('hidden')});
 function toast(t){let e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(window._toast);window._toast=setTimeout(()=>e.style.display='none',1800)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -1249,7 +1268,7 @@ function uiRenderHelperStatus(){
 }
 function uiOpenEditor(){show('article');document.querySelector('.tabs button[data-tab="editor"]').click();setEditorMode('text')}
 function uiOpenStructure(){show('article');document.querySelector('.tabs button[data-tab="structure"]').click()}
-function uiOpenPreview(mode='current'){uiPreviewMode=mode;show('preview')}
+function uiOpenPreview(mode='auto'){uiPreviewMode=mode;show('preview')}
 function sgValidDraftSafe(d){return typeof sgValidDraft==='function'&&sgValidDraft(d)}
 function uiRegenerateVisual(slot){sgRegenerateSlot(slot);uiOpenStructure()}
 function uiQualityNext(a,state){
@@ -1270,6 +1289,6 @@ function uiExportNotice(message){const el=document.getElementById('exportStatus'
 
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-<script src="generation.js?v=1.6.0"></script></body>
+<script src="generation.js?v=1.6.1"></script></body>
 </html>
 
