@@ -12,7 +12,7 @@ Scope: approved changes 1–5 and 7–12. SEO-plan and strategy (item 6) are ret
 - Preview and export share the same HTML document builder. Draft/current selection is explicit. Diff viewing remains separate. Primary exports are article plus images and project JSON; JSON does not embed image binaries.
 - Navigation labels are clearer and use a compact two-row menu below 900px.
 
-Validation: 126 isolated browser scenarios passed, including existing generation/audit/revision/recovery flows, failed-save handling, previous-version preservation, report-only updates, factual evidence pagination, matching preview/export, and rich-text caret preservation. JavaScript syntax checks passed. Four exact source-region comparisons confirmed that plan rendering, duplicate checking, imports, SEO auto-fill, article operations and the strategy form are unchanged.
+Validation: 127 isolated browser scenarios passed, including existing generation/audit/revision/recovery flows, failed-save handling, previous-version preservation, report-only updates, factual evidence pagination, matching preview/export, and rich-text caret preservation. JavaScript syntax checks passed. Four exact source-region comparisons confirmed that plan rendering, duplicate checking, imports, SEO auto-fill, article operations and the strategy form are unchanged.
 
 The browser regression harness uses a separate storage key and simulated model responses. It does not submit live GPT requests or approve publication. GPT-6.1 Sol High, ChatGPT subscription authentication, helper protocol 8, backend code and WebP libraries are unchanged from 1.5.2. The native launcher source is unchanged; its existing compiled implementation is repackaged and signed for the new resources.
 

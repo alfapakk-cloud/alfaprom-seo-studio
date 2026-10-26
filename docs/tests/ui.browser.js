@@ -50,3 +50,6 @@
  await test('Неизменённый HTML из доработки не затирает предыдущую версию',()=>{
   const a=fresh();a.quality=qeNewCheck(a);a.qualityPreviousVersion={content:'<p>Прежняя версия до доработки.</p>',savedAt:'2026-10-20T10:00:00Z'};const before=JSON.stringify(a.qualityPreviousVersion);qeRevisionCandidate=qeParseRevision('<!-- ALFAPROM_QE_REVISION:'+qeRevisionToken(a)+' -->'+a.content,a);qeApplyRevision();assert(JSON.stringify(a.qualityPreviousVersion)===before,'Неизменённый вариант затёр исходную версию');
  });
+ await test('Доработка через помощника доступна и без блокирующих ошибок',()=>{
+  const a=fresh();a.quality=qeNewCheck(a);qeInstallReview(a,qeValidateReport(report(a),a),true);show('quality');assert(document.querySelector('#qualityRoot button[onclick="qeStartPlusRevision()"]'),'Повторная доработка недоступна при неподтверждённых критериях');
+ });
