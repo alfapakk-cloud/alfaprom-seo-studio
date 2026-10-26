@@ -297,7 +297,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error': 'Host rejected'})
         if self.path == '/health':
             return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 7})
-        if self.path == '/generation.js':
+        if self.path.split('?', 1)[0] == '/generation.js':
             source = Path(__file__).with_name('generation.js')
             if not source.is_file(): source = Path(__file__).parent.parent / 'generation.js'
             return self.send(200, source.read_text(encoding='utf-8'), 'text/javascript; charset=utf-8')

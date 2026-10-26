@@ -177,6 +177,14 @@ class HelperTests(unittest.TestCase):
             helper.Handler.do_POST(fake)
             self.assertEqual(calls[0][0], 403)
 
+    def test_versioned_generation_script_is_served(self):
+        calls = []
+        fake = SimpleNamespace(path='/generation.js?v=1.5.1', valid_host=lambda: True, send=lambda code, data, mime: calls.append((code, data, mime)))
+        helper.Handler.do_GET(fake)
+        self.assertEqual(calls[0][0], 200)
+        self.assertIn('function sgRenderGeneration', calls[0][1])
+        self.assertEqual(calls[0][2], 'text/javascript; charset=utf-8')
+
 
 if __name__ == '__main__':
     unittest.main()

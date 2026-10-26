@@ -16,7 +16,8 @@ macos.mkdir(parents=True, exist_ok=True)
 for name in ['alfaprom_helper.py', 'panel.html', 'media.py']:
     shutil.copy2(ROOT / 'helper' / name, resources / 'helper' / name)
 shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
-shutil.copy2(ROOT / 'index.html', resources / 'helper' / 'studio.html')
+# The native page is served with no-store; keep its script URL compatible with an already running protocol-7 process.
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.5.1', 'generation.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
