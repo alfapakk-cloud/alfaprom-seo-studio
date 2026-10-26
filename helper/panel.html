@@ -14,11 +14,16 @@ window.addEventListener('message',async event=>{
  origin=event.origin;
  if(event.data.type==='alfaprom.helper.ping'){heartbeat();return}
  if(event.data.type==='alfaprom.cancel'&&event.data.jobId===job?.id){stopJob();return}
- if(!['alfaprom.revise','alfaprom.audit','alfaprom.edit'].includes(event.data.type)||job||typeof event.data.jobId!=='string'||typeof event.data.prompt!=='string')return;
- const audit=event.data.type==='alfaprom.audit',path=audit?'/audit':event.data.type==='alfaprom.edit'?'/edit':'/revise';
+ if(['alfaprom.asset.save','alfaprom.asset.get'].includes(event.data.type)){
+  const data=event.data;if(typeof data.requestId!=='string'||data.requestId.length>100)return;
+  try{const asset=await post(data.type==='alfaprom.asset.save'?'/assets/save':'/assets/get',data.type==='alfaprom.asset.save'?{base64:data.base64}:{assetId:data.assetId});send({type:'alfaprom.asset.result',requestId:data.requestId,asset})}
+  catch(e){send({type:'alfaprom.asset.error',requestId:data.requestId,error:e.message})}return;
+ }
+ if(!['alfaprom.revise','alfaprom.audit','alfaprom.edit','alfaprom.generate','alfaprom.illustrate'].includes(event.data.type)||job||typeof event.data.jobId!=='string'||typeof event.data.prompt!=='string')return;
+ const kind=event.data.type,audit=kind==='alfaprom.audit',generate=kind==='alfaprom.generate',illustrate=kind==='alfaprom.illustrate',path=audit?'/audit':generate?'/generate':illustrate?'/illustrate':kind==='alfaprom.edit'?'/edit':'/revise';
  const active={id:event.data.jobId};job=active;status.textContent=audit?'Проверяем 23 критерия…':'Выполняется доработка…';cancel.disabled=false;
  poll=setInterval(progress,1000);
- try{const data=await post(path,{jobId:active.id,prompt:event.data.prompt});status.textContent='Результат передан в студию.';if(audit){send({type:'alfaprom.audit.result',jobId:active.id,report:data.report})}else{result=data.html;document.getElementById('download').hidden=false;send({type:'alfaprom.revision.result',jobId:active.id,html:result,seo:data.seo})}}
+ try{const data=await post(path,{jobId:active.id,prompt:event.data.prompt});status.textContent='Результат передан в студию.';if(generate||illustrate){send({type:generate?'alfaprom.generation.result':'alfaprom.illustration.result',jobId:active.id,result:data})}else if(audit){send({type:'alfaprom.audit.result',jobId:active.id,report:data.report})}else{result=data.html;document.getElementById('download').hidden=false;send({type:'alfaprom.revision.result',jobId:active.id,html:result,seo:data.seo})}}
  catch(error){status.textContent=error.message;send({type:'alfaprom.revision.error',jobId:active.id,error:error.message})}
  finally{clearInterval(poll);job=null;cancel.disabled=true}
 });

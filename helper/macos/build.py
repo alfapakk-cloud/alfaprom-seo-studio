@@ -13,8 +13,9 @@ macos = contents / 'MacOS'
 resources = contents / 'Resources'
 macos.mkdir(parents=True, exist_ok=True)
 (resources / 'helper').mkdir(parents=True, exist_ok=True)
-for name in ['alfaprom_helper.py', 'panel.html']:
+for name in ['alfaprom_helper.py', 'panel.html', 'media.py']:
     shutil.copy2(ROOT / 'helper' / name, resources / 'helper' / name)
+shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
 shutil.copy2(ROOT / 'index.html', resources / 'helper' / 'studio.html')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
@@ -22,8 +23,8 @@ info = {
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.4',
-    'CFBundleVersion': '6',
+    'CFBundleShortVersionString': '1.5',
+    'CFBundleVersion': '7',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

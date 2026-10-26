@@ -15,6 +15,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 @media(max-width:900px){.side{position:static;width:100%;height:auto}.app{display:block}.main{margin:0;width:100%;padding:16px}.stats,.grid{grid-template-columns:1fr}.two{grid-template-columns:1fr}.article{padding:25px}}
 
 #view-quality .qe-helper-status{margin:14px 0 10px;padding:12px 15px;background:#f1f3f6;border-radius:8px;font-size:13px;line-height:1.6}#view-quality .qe-helper-status[data-state=connected]{background:#e7f6ed;color:#16653c}#view-quality .qe-helper-status[data-state=offline],#view-quality .qe-helper-status[data-state=outdated],#view-quality .qe-helper-status[data-state=unavailable]{background:#fff3dc;color:#895900}#view-quality .qe-progress-card{border:1px solid #f2cfaa;background:#fffaf4;padding:18px;border-radius:10px;margin:16px 0}#view-quality .qe-progress-card.done{background:#f2fbf5;border-color:#b8dfc7}#view-quality .qe-progress-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px}#view-quality .qe-progress-heading strong{font-size:24px;color:#d66b00;font-variant-numeric:tabular-nums}#view-quality .qe-progress-track{height:10px;background:#ebe6df;border-radius:20px;overflow:hidden;margin-bottom:12px}#view-quality .qe-progress-track span{display:block;height:100%;background:#ff8100;transition:width .5s ease;border-radius:20px}#view-quality .done .qe-progress-track span{background:#28a367}#view-quality .qe-diff-legend{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:20px;margin-top:18px;font-size:13px}#view-quality .qe-diff-legend mark{background:#ffec86;padding:3px 6px}#view-quality .qe-diff-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start}#view-quality .qe-diff-layout iframe{height:650px;margin-top:0}#view-quality .qe-diff-removed{background:#fff7f7;border:1px solid #f0d4d4;border-radius:8px;padding:16px;max-height:650px;overflow:auto;font-size:13px;line-height:1.65;overflow-wrap:anywhere}#view-quality .qe-diff-removed h4{font-size:13px;margin:0 0 12px}#view-quality .qe-diff-removed del{color:#9d3b3b;text-decoration-color:#c17b7b}@media(max-width:900px){#view-quality .qe-diff-layout{grid-template-columns:1fr}#view-quality .qe-diff-removed{max-height:260px}}@media(prefers-reduced-motion:reduce){#view-quality .qe-progress-track span{transition:none}}
+
+.sg-profiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}.sg-profile{display:flex;flex-direction:column;gap:7px;align-items:flex-start;text-align:left;padding:16px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--text);font:inherit;cursor:pointer}.sg-profile.selected{border:2px solid var(--orange);background:#fff6e9;padding:15px}.sg-profile:disabled{opacity:.65;cursor:default}.sg-result{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}.sg-thumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}.sg-thumbs>div{display:flex;flex-direction:column;gap:8px;padding:12px;background:white;border:1px solid var(--line);border-radius:8px}.sg-thumbs img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:6px}#preview img{max-width:100%;height:auto}#preview figure{margin:28px 0}#preview figcaption{color:var(--muted);font-size:13px}@media(max-width:700px){.sg-profiles,.sg-thumbs{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -128,11 +130,11 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
   <div class="grid">
     <div class="card">
       <h2>Пакет публикации</h2>
-      <p class="muted">Сформируй HTML и SEO-файл. В полном MVP сюда добавится ZIP с WebP и DOCX.</p>
+      <p class="muted">Сформируй HTML и SEO-файл. ZIP сохраняет статью и реальные WebP. JSON сохраняет текст и настройки; для переноса изображений скачайте также ZIP.</p>
       <div class="actions">
         <button class="btn primary" onclick="downloadHTML()">⇩ article.html</button>
         <button class="btn" onclick="downloadSEO()">⇩ SEO.txt</button>
-        <button class="btn" onclick="downloadJSON()">⇩ project.json</button>
+        <button class="btn" onclick="downloadJSON()">⇩ project.json</button><button class="btn primary" onclick="sgDownloadPackage()">⇩ ZIP со статьёй и WebP</button>
       </div>
     </div>
     <div class="card"><h2>Статус</h2><div id="exportStatus" class="empty">Пока не подготовлено.</div></div>
@@ -394,7 +396,7 @@ async function importBlogIndex(){
  }
 }
 function renderArticle(){
- const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''});
+ const a=get(); ['topic','keyword','cluster','keywords','intent','problem','equipment','links','topicSuitability','cannibalizationRisk','existingBlogMaterials','topicRecommendation','title','description','h1','outline','content'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=a[id]||''}); if(typeof sgRenderGeneration==='function')sgRenderGeneration();
 }
 function renderEditorTextView(){
  const a=get();
@@ -475,7 +477,7 @@ function qeHash(value){
  return (h>>>0).toString(16).padStart(8,'0')+(g>>>0).toString(16).padStart(8,'0');
 }
 function qeFingerprint(a){
- return qeHash([QE_VERSION,a.id,...['topic','keyword','keywords','cluster','intent','problem','equipment','links','title','description','h1','outline','content'].map(k=>String(a[k]||'')),a.generationBrief?.research||null,db.blogIndex?.articles||[],db.articles.filter(x=>x.id!==a.id).map(x=>[x.id,x.topic,x.keyword])]);
+ const input=[QE_VERSION,a.id,...['topic','keyword','keywords','cluster','intent','problem','equipment','links','title','description','h1','outline','content'].map(k=>String(a[k]||'')),a.generationBrief?.research||null,db.blogIndex?.articles||[],db.articles.filter(x=>x.id!==a.id).map(x=>[x.id,x.topic,x.keyword])];if(a.contentProfile)input.push({contentProfile:a.contentProfile});return qeHash(input);
 }
 function qeFinalFingerprint(a){return qeHash([qeFingerprint(a),a.quality?.approvedAt,a.visuals||[]])}
 function qeNormalize(s){return String(s||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('ru')}
@@ -524,6 +526,7 @@ function qeAnalyze(a){
  const blocks=[...doc.body.querySelectorAll('p,li,td,th,blockquote')].map(x=>(x.textContent||'').replace(/\s+/g,' ').trim());
  const sentences=(blocks.length?blocks:[text]).flatMap(block=>block.match(/[^.!?]+(?:[.!?]|$)/g)||[]).map(s=>s.trim());
  for(const claim of sentences){if(claim.length<25||claim.length>700)continue;if(/\d\s*(?:%|°|градус|руб|₽|кВт|Вт\b|бар\b|МПа|кПа|кг|тонн|час|мин|сек|сут|дн|недел|месяц|лет|год)|\b(?:ГОСТ|ISO|ТР ТС)\b|увеличива\S*\s+срок|гарантиру\S*|окупа\S*/i.test(claim)){if(!facts.some(f=>f.claim===claim))facts.push({claim,sourceUrl:'',sourceQuote:'',origin:'Найдено автоматически'})}}
+ if(a.contentProfile&&typeof sgProfile==='function'){const p=sgProfile(a),n=sgPlainLength(a.content);if(p&&(n<p.min||n>p.max))issue(2,'Объём не соответствует выбранному формату',`Сейчас ${n} знаков; для формата нужно ${p.min}–${p.max}.`,'Содержательно скорректируйте объём, сохранив полезные разделы и реальные изображения.');}
  return {issues,observations,facts};
 }
 function qeCurrent(a){return a.quality?.version===QE_VERSION&&a.quality.snapshot===qeFingerprint(a)}
@@ -628,6 +631,9 @@ function qeBuildRevisionPrompt(a){
 Критериев с проблемами: ${problems.length}. Критериев без подтверждения: ${unknown.length}. ${context.reviewAccepted?'Редакционная AI-оценка принята человеком.':'Редакционная AI-оценка ещё не принята или отсутствует: отделяй выявленные ошибки от предложений и сомнений.'}
 ЗАМЕЧАНИЯ, ОСНОВАНИЯ И ФАКТЫ:
 ${JSON.stringify(context,null,2)}
+ФОРМАТ ТЕКУЩЕГО ТЕКСТА:
+${a.contentProfile&&typeof sgProfile==='function'?JSON.stringify(sgProfile(a)):'Отдельный объём не задан; полнота важнее длины.'}
+Сохрани заданный объём и реальные изображения. Не увеличивай компактную статью ради формальных блоков.
 ПОЛНЫЙ СТАНДАРТ:
 ${criteria.map((c,i)=>`${i+1}. ${c}. ${qeGuides[i]}`).join('\n')}
 SEO-ЗАДАЧА И ПОДТВЕРЖДЁННЫЕ ДАННЫЕ:
@@ -692,10 +698,10 @@ function qeApplyRevision(){
 function qeDiscardRevision(){qeRevisionCandidate=null;renderCriteria()}
 function qeRestorePrevious(){
  const a=get(),previous=a?.qualityPreviousVersion;if(!previous)return;
- const current={content:a.content,seo:qeSeo(a),quality:a.quality,savedAt:new Date().toISOString()};
- a.content=previous.content;if(previous.seo)Object.assign(a,previous.seo);a.quality=previous.quality;a.qualityPreviousVersion=current;
+ const current={content:a.content,seo:qeSeo(a),quality:a.quality,visuals:a.visuals,contentProfile:a.contentProfile||null,savedAt:new Date().toISOString()};
+ a.content=previous.content;if(previous.seo)Object.assign(a,previous.seo);if('visuals'in previous)a.visuals=previous.visuals;if('contentProfile'in previous){if(previous.contentProfile)a.contentProfile=previous.contentProfile;else delete a.contentProfile}a.quality=previous.quality;a.qualityPreviousVersion=current;
  try{save(true);qeRevisionCandidate=null;qePromptArticle=null;renderCriteria();toast('Предыдущая версия текста восстановлена')}
- catch(e){a.content=current.content;Object.assign(a,current.seo);a.quality=current.quality;a.qualityPreviousVersion=previous;renderCriteria();qeError('Не удалось сохранить восстановление. Текущая версия оставлена без изменений.');}
+ catch(e){a.content=current.content;Object.assign(a,current.seo);a.visuals=current.visuals;if(current.contentProfile)a.contentProfile=current.contentProfile;else delete a.contentProfile;a.quality=current.quality;a.qualityPreviousVersion=previous;renderCriteria();qeError('Не удалось сохранить восстановление. Текущая версия оставлена без изменений.');}
 }
 // Comparison uses visible words and punctuation, and decorates a disposable DOM only.
 function qeDiffDocument(html){
@@ -744,16 +750,18 @@ function qeRevisionPreview(previous=false){
  if(previous&&!a.qualityPreviousVersion)return;
  const before=previous?a.qualityPreviousVersion.content:a.content,after=previous?a.content:qeRevisionCandidate.html;
  const target=document.getElementById(previous?'qePreviousDiff':'qeRevisionPreview');if(!target)return;
- const diff=qeBuildRevisionDiff(before,after);
+ const diff=qeBuildRevisionDiff(before,after);if(typeof sgDisplayHtml==='function')diff.html=sgDisplayHtml(diff.html,a.visuals||[]);
  target.innerHTML=`<div class="qe-diff-legend"><span><mark>Жёлтым</mark> — добавлено или переписано</span><span class="qe-note">Подсветка видна только при сравнении</span></div><p class="qe-note">Добавлено слов и знаков: ${diff.added} · Удалено: ${diff.removedCount}.${diff.coarse?' Большой объём изменений: выделен изменённый блок целиком.':''}${!diff.added&&!diff.removedCount?' Видимый текст совпадает; HTML, ссылки или оформление могли измениться.':''}</p><div class="qe-diff-layout"><div><iframe title="Новая статья с выделением изменений" sandbox=""></iframe></div><aside class="qe-diff-removed"><h4>Удалено из прежней версии</h4>${diff.removed.length?diff.removed.map(t=>'<p><del>'+esc(t)+'</del></p>').join(''):'<p class="qe-note">Удалённых фрагментов нет.</p>'}</aside></div>`;
- target.querySelector('iframe').srcdoc='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src https: data:; style-src \'unsafe-inline\'"><style>body{font:16px/1.7 system-ui;padding:24px;max-width:850px;margin:auto;color:#20252b}img,table{max-width:100%}h1,h2,h3{line-height:1.25}td,th{padding:8px;border:1px solid #ddd}mark.qe-added{background:#ffec86;color:inherit;border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}a{color:#2868b7}</style></head><body><h1>'+esc(a.h1||a.topic)+'</h1>'+diff.html+'</body></html>';
+ target.querySelector('iframe').srcdoc='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src https: data: blob:; style-src \'unsafe-inline\'"><style>body{font:16px/1.7 system-ui;padding:24px;max-width:850px;margin:auto;color:#20252b}img,table{max-width:100%}h1,h2,h3{line-height:1.25}td,th{padding:8px;border:1px solid #ddd}mark.qe-added{background:#ffec86;color:inherit;border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}a{color:#2868b7}</style></head><body><h1>'+esc(a.h1||a.topic)+'</h1>'+diff.html+'</body></html>';
 }
 let qeHelperJob=null,qeHelperFrame=null,qeHelperWatch=null,qeHelperLastSeen=0,qeHelperFinished=null,qeHelperRecovery=null;
+let qeHelperProtocol=0;
 let qeHelperState='idle',qeHelperLaunchUntil=0,qeHelperConnectingSince=0;
 const QE_HELPER_ORIGIN='http://127.0.0.1:8766';
 const qeHelperStages={connecting:{percent:5,label:'Подключаем помощника'},authenticating:{percent:15,label:'Проверяем вход через ChatGPT'},starting:{percent:25,label:'Передаём задание GPT'},generating:{percent:35,label:'GPT дорабатывает статью'},validating:{percent:95,label:'Получаем и проверяем HTML'},complete:{percent:100,label:'Доработка завершена'}};
 function qeHelperDuration(seconds){seconds=Math.max(0,Math.round(seconds));return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')}
 function qeHelperProgressView(job,now=Date.now()){
+ if(job.kind==='generation'&&typeof sgProgressView==='function')return sgProgressView(job,now);
  const elapsed=Math.max(0,((job.finishedAt||now)-job.started)/1000),stage=qeHelperStages[job.stage]||qeHelperStages.connecting;
  // Model events report stages, not a completion fraction. Interpolation is explicitly an estimate.
  let percent=stage.percent;if(job.stage==='generating')percent=Math.min(90,35+55*Math.min(1,Math.max(0,((job.phaseStarted?(now-job.phaseStarted)/1000:elapsed)-8))/job.estimate));
@@ -768,10 +776,10 @@ function qeHelperProgressView(job,now=Date.now()){
 function qeHelperStatusText(){
  if(qeHelperState==='connected')return '● Программа активирована · помощник подключён';
  if(qeHelperState==='launching')return 'Запрос на запуск отправлен. Подтвердите открытие приложения на Mac, если браузер попросит. Подключаемся…';
- if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.4 и перезапустите его через меню α SEO.';
+ if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.5 и перезапустите его через меню α SEO.';
  if(qeHelperState==='offline')return 'Программа завершила работу или связь потеряна. Запустите помощника и нажмите «Проверить подключение».';
  if(qeHelperState==='checking')return 'Проверяем подключение помощника…';
- if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.4. Студия проверит подключение снова автоматически.';
+ if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.5. Студия проверит подключение снова автоматически.';
  return 'Запустите помощника один раз. Его статус, ход доработки и результат появятся на этой странице.';
 }
 function qeRenderHelperProgress(){
@@ -779,6 +787,7 @@ function qeRenderHelperProgress(){
  const p=qeHelperProgressView(job);return `<div id="qeHelperProgress" class="qe-progress-card ${job.stage==='complete'?'done':''}"><div class="qe-progress-heading"><b id="qeHelperStage" role="status">${esc(p.label)}</b><strong id="qeHelperPercent">${p.percent}%</strong></div><div id="qeHelperBar" class="qe-progress-track" role="progressbar" aria-label="Оценочный прогресс проверки и доработки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.percent}"><span style="width:${p.percent}%"></span></div><p id="qeHelperTime" class="qe-note">${esc(p.time)}</p>${job.articleId!==get()?.id?'<p class="qe-note">Дорабатывается: '+esc(job.articleTitle||'другая статья')+'</p>':''}<p class="qe-note">Процент и время приблизительные: GPT сообщает этапы работы, но не точное время завершения.</p>${qeHelperJob?'<button class="btn small" onclick="qeCancelPlusRevision()">Остановить доработку</button>':''}</div>`;
 }
 function qeUpdateHelperUI(){
+ if(typeof sgUpdateUI==='function')sgUpdateUI();
  const note=document.getElementById('qeHelperLaunchNote');if(note){note.textContent=qeHelperStatusText();note.dataset.state=qeHelperState}
  const job=qeHelperJob||(qeHelperFinished?.articleId===get()?.id?qeHelperFinished:null);if(!job)return;const p=qeHelperProgressView(job),stage=document.getElementById('qeHelperStage'),bar=document.getElementById('qeHelperBar');
  if(stage)stage.textContent=p.label;if(bar){bar.setAttribute('aria-valuenow',p.percent);bar.firstElementChild.style.width=p.percent+'%'}
@@ -801,11 +810,12 @@ function qeEnsureHelper(reconnect=false){
 }
 function qeConnectHelper(){qeEnsureHelper(true)}
 function qeLaunchHelperFromStudio(){qeHelperState='launching';qeHelperLaunchUntil=Date.now()+18000;qeEnsureHelper(true);toast('Запрос на запуск помощника отправлен')}
-function qeSendHelperJob(){const job=qeHelperJob;if(!job||job.sent||qeHelperState!=='connected')return;job.sent=true;clearTimeout(job.timer);qeHelperFrame.contentWindow.postMessage({type:job.operation==='audit'?'alfaprom.audit':job.operation==='edit'?'alfaprom.edit':'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
+function qeSendHelperJob(){const job=qeHelperJob;if(job?.kind==='generation'&&typeof sgSendJob==='function')return sgSendJob();if(!job||job.sent||qeHelperState!=='connected')return;job.sent=true;clearTimeout(job.timer);qeHelperFrame.contentWindow.postMessage({type:job.operation==='audit'?'alfaprom.audit':job.operation==='edit'?'alfaprom.edit':'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeStartPlusRevision(){qeStartQualityCycle('cycle')}
 function qeCancelPlusRevision(){const job=qeHelperJob;if(!job)return;if(!job.sent)return qeFinishHelperError('Подключение остановлено. Исходная статья сохранена.');job.cancelling=true;qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeClearHelperJob(){const job=qeHelperJob;if(job){clearTimeout(job.timer);clearTimeout(job.deadline);clearInterval(job.tick)}qeHelperJob=null;return job}
 function qeFinishHelperError(message){
+ if(qeHelperJob?.kind==='generation'&&typeof sgFail==='function')return sgFail(message);
  const job=qeClearHelperJob();qeHelperFinished=null;
  if(job?.mode&&qeQualitySourceCurrent(job)){
   const changed=job.draft.content!==job.sourceContent||JSON.stringify(qeSeo(job.draft))!==JSON.stringify(job.sourceSeo);
@@ -818,11 +828,13 @@ function qeDownloadHelperRecovery(){if(qeHelperRecovery)download('article-improv
 function qeHandleHelperMessage(event){
  if(event.origin!==QE_HELPER_ORIGIN||!qeHelperFrame||event.source!==qeHelperFrame.contentWindow||!event.data)return;
  const data=event.data;
+ if(typeof sgHandleAssetMessage==='function'&&sgHandleAssetMessage(data))return;
  if(data.type==='alfaprom.helper.ready'){
-  qeHelperLastSeen=Date.now();if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=6?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для проверки 23 критериев нужен помощник 1.4. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
+  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=6?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для проверки 23 критериев нужен помощник 1.4. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
  }
  if(data.type==='alfaprom.helper.offline'){qeHelperState='offline';qeUpdateHelperUI();return}
  const job=qeHelperJob;if(!job||data.jobId!==job.id)return;
+ if(job.kind==='generation'&&typeof sgHandleJobMessage==='function')return sgHandleJobMessage(job,data);
  if(data.type==='alfaprom.revision.progress'){qeHelperLastSeen=Date.now();if(qeHelperStages[data.stage]&&qeHelperStages[data.stage].percent>=qeHelperStages[job.stage].percent)job.stage=data.stage==='complete'?'validating':data.stage;qeUpdateHelperUI();return}
  if(data.type==='alfaprom.revision.error')return qeFinishHelperError(String(data.error||'Доработка не завершена. Исходная статья сохранена.'));
  if(job.mode&&['alfaprom.revision.result','alfaprom.audit.result'].includes(data.type))return qeHandleQualityResult(job,data);
@@ -835,13 +847,13 @@ function qeHandleHelperMessage(event){
 }
 window.addEventListener('message',qeHandleHelperMessage);
 
-function qeRenderHelperControls(a){return `${qeLocalWorkspaceNotice()}`+`<p class="qe-note">α SEO 1.4 · оценка → доработка → повторная оценка</p><div class="actions"><a class="btn" style="color:inherit;text-decoration:none" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить помощника</a><button class="btn primary" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>${qeHelperJob?'Выполняется проверка / доработка…':'Исправить замечания и перепроверить'}</button></div><div class="qe-helper-status" id="qeHelperLaunchNote" role="status" data-state="${qeHelperState}">${esc(qeHelperStatusText())}</div><button class="btn small" onclick="qeConnectHelper()" ${qeHelperJob?'disabled':''}>Проверить подключение</button>${location.origin!==QE_HELPER_ORIGIN?'<div class="qe-notice" style="margin-top:12px"><p>Если браузер не соединяет сайт с помощником, откройте студию на этом Mac. Проект перенесётся в ту же вкладку вместе с очередью и текстами. Нужен помощник 1.4.</p><button class="btn primary" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></div>':''}${qeRenderHelperProgress()}${qeHelperRecovery?'<div class="qe-notice">Результат сохранён для ручного возврата. <button class="btn small" onclick="qeDownloadHelperRecovery()">Скачать полученный HTML</button></div>':''}`;}
+function qeRenderHelperControls(a){return `${qeLocalWorkspaceNotice()}`+`<p class="qe-note">α SEO 1.5 · оценка → доработка → повторная оценка</p><div class="actions"><a class="btn" style="color:inherit;text-decoration:none" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить помощника</a><button class="btn primary" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>${qeHelperJob?'Выполняется проверка / доработка…':'Исправить замечания и перепроверить'}</button></div><div class="qe-helper-status" id="qeHelperLaunchNote" role="status" data-state="${qeHelperState}">${esc(qeHelperStatusText())}</div><button class="btn small" onclick="qeConnectHelper()" ${qeHelperJob?'disabled':''}>Проверить подключение</button>${location.origin!==QE_HELPER_ORIGIN?'<div class="qe-notice" style="margin-top:12px"><p>Если браузер не соединяет сайт с помощником, откройте студию на этом Mac. Проект перенесётся в ту же вкладку вместе с очередью и текстами. Нужен помощник 1.5.</p><button class="btn primary" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></div>':''}${qeRenderHelperProgress()}${qeHelperRecovery?'<div class="qe-notice">Результат сохранён для ручного возврата. <button class="btn small" onclick="qeDownloadHelperRecovery()">Скачать полученный HTML</button></div>':''}`;}
 
 function qeRenderRevision(a){
  if(!qeCurrent(a))return `<div class="card qe-panel" style="margin-top:18px"><h3>Доработка статьи в ChatGPT</h3><p class="muted">После анализа здесь автоматически появится задание с текущими замечаниями и полным текстом статьи.</p>${qeRenderHelperControls(a)}${a.qualityPreviousVersion?'<div class="actions"><button class="btn" onclick="qeRevisionPreview(true)">Показать изменения последней доработки</button><button class="btn" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button></div><div id="qePreviousDiff"></div>':''}</div>`;
  const context=qeRevisionContext(a),c=qeRevisionCandidate?.articleId===a.id?qeRevisionCandidate:null,valid=qeCandidateCurrent(a),bad=context.criteria.filter(r=>r.status==='problem').length,unknown=context.criteria.filter(r=>r.status==='unverified').length;
  const oldWords=qeText(qeDoc(a)).split(/\s+/).filter(Boolean).length;
- return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><div><h3>Доработка статьи в ChatGPT</h3><p class="qe-note">Задание сформировано автоматически по текущему анализу: замечания, основания, факты и полный HTML статьи.</p></div><span class="pill">Без платного API</span></div><p>Критериев с проблемами: <b>${bad}</b> · Ожидают подтверждения: <b>${unknown}</b></p><p class="qe-note">Помощник оценит все критерии, исправит выявленные недостатки и повторно проверит новый вариант. До двух попыток за цикл. Исходная статья сохраняется до вашего применения.</p>${qeRenderHelperControls(a)}<details style="margin-bottom:16px"><summary style="cursor:pointer">Что такое локальный помощник?</summary><p class="qe-note">Небольшая программа на вашем компьютере передаёт статью подключённому ChatGPT и возвращает HTML в студию. Запускается кнопкой из студии и появляется в строке меню Mac как «α SEO». Оттуда его можно остановить. Работает в фоне: отдельное окно не открывается. Для этого режима нужна версия помощника 1.4. Исходный текст заменяется после вашего просмотра; при ошибке или исчерпании лимита доработка останавливается.</p><p class="qe-note">На другом Mac нужно один раз установить обработчик запуска: <a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>скачать помощника для Mac с Apple Silicon</a>, распаковать и открыть ALFAPROM Helper.app. Если используется прежний запуск через .command, закройте его перед первым запуском приложения.</p></details><div class="actions"><button class="btn" onclick="qeCopyRevision(true)">Скопировать и открыть ChatGPT ↗</button><button class="btn" onclick="qeCopyRevision()">Скопировать задание</button><button class="btn" onclick="qeDownloadRevision()">Скачать TXT</button></div><p class="qe-note" style="margin-top:12px">В ChatGPT вставьте задание (Ctrl+V / ⌘V) и нажмите «Отправить». Затем загрузите полученный article-improved.html ниже. Если вкладка не открылась, <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">откройте ChatGPT</a>. Студия не читает ваш чат автоматически.</p><details><summary style="cursor:pointer">Посмотреть готовое задание</summary><textarea id="qeRevisionPrompt" aria-label="Задание на доработку статьи" readonly class="qe-prompt" style="margin-top:12px">${esc(qeBuildRevisionPrompt(a))}</textarea></details>
+ return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><div><h3>Доработка статьи в ChatGPT</h3><p class="qe-note">Задание сформировано автоматически по текущему анализу: замечания, основания, факты и полный HTML статьи.</p></div><span class="pill">Без платного API</span></div><p>Критериев с проблемами: <b>${bad}</b> · Ожидают подтверждения: <b>${unknown}</b></p><p class="qe-note">Помощник оценит все критерии, исправит выявленные недостатки и повторно проверит новый вариант. До двух попыток за цикл. Исходная статья сохраняется до вашего применения.</p>${qeRenderHelperControls(a)}<details style="margin-bottom:16px"><summary style="cursor:pointer">Что такое локальный помощник?</summary><p class="qe-note">Небольшая программа на вашем компьютере передаёт статью подключённому ChatGPT и возвращает HTML в студию. Запускается кнопкой из студии и появляется в строке меню Mac как «α SEO». Оттуда его можно остановить. Работает в фоне: отдельное окно не открывается. Для этого режима нужна версия помощника 1.5. Исходный текст заменяется после вашего просмотра; при ошибке или исчерпании лимита доработка останавливается.</p><p class="qe-note">На другом Mac нужно один раз установить обработчик запуска: <a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>скачать помощника для Mac с Apple Silicon</a>, распаковать и открыть ALFAPROM Helper.app. Если используется прежний запуск через .command, закройте его перед первым запуском приложения.</p></details><div class="actions"><button class="btn" onclick="qeCopyRevision(true)">Скопировать и открыть ChatGPT ↗</button><button class="btn" onclick="qeCopyRevision()">Скопировать задание</button><button class="btn" onclick="qeDownloadRevision()">Скачать TXT</button></div><p class="qe-note" style="margin-top:12px">В ChatGPT вставьте задание (Ctrl+V / ⌘V) и нажмите «Отправить». Затем загрузите полученный article-improved.html ниже. Если вкладка не открылась, <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">откройте ChatGPT</a>. Студия не читает ваш чат автоматически.</p><details><summary style="cursor:pointer">Посмотреть готовое задание</summary><textarea id="qeRevisionPrompt" aria-label="Задание на доработку статьи" readonly class="qe-prompt" style="margin-top:12px">${esc(qeBuildRevisionPrompt(a))}</textarea></details>
  <div id="qeRevisionReturn" style="border-top:1px solid var(--line);margin-top:20px;padding-top:20px"><h3>Вернуть улучшенную статью</h3><button class="btn" onclick="document.getElementById('qualityRevisionFile').click()">Загрузить улучшенный HTML</button><details style="margin-top:12px"><summary style="cursor:pointer">Или вставить HTML из ответа</summary><div class="field" style="margin-top:12px"><label for="qeRevisionPaste">Полный HTML улучшенной статьи</label><textarea id="qeRevisionPaste" placeholder="Вставьте полный HTML, полученный от ChatGPT"></textarea></div><button class="btn small" onclick="qePasteRevision()">Проверить вставленный HTML</button></details>
  ${c?`<div class="qe-notice" style="margin-top:16px">${valid?'Новый вариант загружен для просмотра. Текущая статья пока не заменена.':'Статья или анализ изменились. Этот загруженный вариант нельзя применить.'}</div><p class="qe-note">${esc(c.filename)} · Сейчас ${oldWords} слов → новый вариант ${c.words} слов.</p>${c.words<oldWords*.65?'<p class="qe-notice">Новый текст заметно короче исходного. Перед заменой проверьте, сохранены ли полезные разделы.</p>':''}${qeRenderCandidateReview(c,a)}${c.seo?'<details><summary>Изменения SEO-полей</summary>'+['title','description','h1'].map(k=>'<p><b>'+k+'</b><br>Было: '+esc(a[k]||'—')+'<br>Стало: '+esc(c.seo[k])+'</p>').join('')+'</details>':''}${!c.token?'<label class="qe-checkline"><input id="qeRevisionIdentity" type="checkbox"><span>В файле нет метки версии. Я проверил, что это доработка именно выбранной статьи.</span></label>':'<p class="qe-note">✓ Метка статьи и версии совпадает с текущим заданием.</p>'}<div class="actions"><button class="btn" onclick="qeRevisionPreview()" ${!valid?'disabled':''}>Посмотреть изменения</button><button class="btn primary" onclick="qeApplyRevision()" ${!valid?'disabled':''}>${c.quality?.review?'Применить статью и отчёт':'Применить и проверить 23 критерия'}</button><button class="btn" onclick="qeDiscardRevision()">Отменить загрузку</button></div><div id="qeRevisionPreview"></div>`:'<p class="qe-note" style="margin-top:12px">Перед заменой будет доступен просмотр. Предыдущий текст сохранится для восстановления. После полного цикла новая версия уже содержит повторную оценку 23 критериев. Ручной HTML будет оценён через α SEO после применения.</p>'}</div>
  ${a.qualityPreviousVersion?`<div style="border-top:1px solid var(--line);padding-top:16px;margin-top:18px"><p class="qe-note">Предыдущая версия сохранена: ${qeDate(a.qualityPreviousVersion.savedAt)}.</p><div class="actions"><button class="btn small" onclick="qeRevisionPreview(true)">Показать изменения последней доработки</button><button class="btn small" onclick="qeRestorePrevious()">Восстановить предыдущую версию текста</button></div><div id="qePreviousDiff"></div></div>`:''}</div>`;
@@ -880,7 +892,7 @@ function qeQualityOperation(job,operation,reconnect=false){
  job.estimate=Math.max(60,Math.min(600,50+qeText(qeDoc(job.draft)).length/45));
  job.range=job.mode==='audit'?[0,99]:operation==='edit'?(job.rounds===1?[15,43]:[76,14]):job.rounds===0?[0,15]:job.rounds===1?[58,18]:[90,9];
  job.prompt=operation==='audit'?qeBuildPrompt(job.draft):qeBuildRevisionPrompt(job.draft);
- job.timer=setTimeout(()=>{if(qeHelperJob===job&&!job.sent)qeFinishHelperError('Помощник не подключился. Запустите помощника 1.4 и проверьте подключение.');},15000);
+ job.timer=setTimeout(()=>{if(qeHelperJob===job&&!job.sent)qeFinishHelperError('Помощник не подключился. Запустите помощника 1.5 и проверьте подключение.');},15000);
  job.deadline=setTimeout(()=>{if(qeHelperJob===job){qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeFinishHelperError('Текущий этап превысил 16 минут. Исходная статья сохранена.');}},960000);
  if(reconnect)qeEnsureHelper(true);qeSendHelperJob();renderCriteria();if(reconnect)document.getElementById('qeHelperProgress')?.scrollIntoView({block:'nearest'});
 }
@@ -955,7 +967,7 @@ ${JSON.stringify(template,null,2)}
 КРИТЕРИИ И ПРАВИЛА:
 ${criteria.map((c,i)=>`${i+1}. ${c}. ${qeGuides[i]}`).join('\n')}
 ИСХОДНЫЕ ДАННЫЕ:
-${JSON.stringify({topic:a.topic,seo:{keyword:a.keyword,keywords:a.keywords,intent:a.intent,title:a.title,description:a.description,h1:a.h1},task:{problem:a.problem,equipment:a.equipment,links:a.links},research:a.generationBrief?.research||{},publishedTitles:db.blogIndex?.articles||[],otherPlannedTopics:db.articles.filter(x=>x.id!==a.id).map(x=>({topic:x.topic,keyword:x.keyword})),automaticCheck:a.quality?.automatic,articleHtml:a.content},null,2)}`;
+${JSON.stringify({topic:a.topic,contentFormat:a.contentProfile&&typeof sgProfile==='function'?sgProfile(a):null,seo:{keyword:a.keyword,keywords:a.keywords,intent:a.intent,title:a.title,description:a.description,h1:a.h1},task:{problem:a.problem,equipment:a.equipment,links:a.links},research:a.generationBrief?.research||{},publishedTitles:db.blogIndex?.articles||[],otherPlannedTopics:db.articles.filter(x=>x.id!==a.id).map(x=>({topic:x.topic,keyword:x.keyword})),automaticCheck:a.quality?.automatic,articleHtml:a.content},null,2)}`;
 }
 function qePrepareReview(){
  const a=get();if(!a)return;if(!qeCurrent(a))a.quality=qeNewCheck(a);
@@ -1011,7 +1023,8 @@ async function qeImportReport(file){
 }
 function qeFinalChecks(a){
  const text=qeTextState(a),q=a.quality,doc=qeDoc(a),imgs=[...doc.body.querySelectorAll('img')];
- const visuals=a.visuals||[],approved=visuals.filter(v=>v.status==='approved');
+ const visuals=a.visuals||[],approved=visuals.filter(v=>v.status==='approved'),target=typeof sgVisualCount==='function'?sgVisualCount(a):4;
+ const assetsAvailable=typeof sgAssets==='undefined'||visuals.every(v=>!v.assetId||sgAssets.has(v.assetId));
  const fileName=s=>{try{return decodeURIComponent(new URL(s,'https://alfaprom.org/').pathname.split('/').pop())}catch(e){return ''}};
  const actual=imgs.filter(img=>{const src=(img.getAttribute('src')||'').trim();return src&&!/^(?:data:|blob:|javascript:|#)/i.test(src)&&/^https?:$/.test((()=>{try{return new URL(src,'https://alfaprom.org/').protocol}catch(e){return ''}})())});
  const matched=actual.every(img=>approved.some(v=>v.file&&fileName(v.file)===fileName(img.getAttribute('src'))));
@@ -1019,7 +1032,7 @@ function qeFinalChecks(a){
  return [
   {id:'text',title:'Текст утверждён',ok:!!(text.ready&&q?.approvedAt),reason:text.ready?(q?.approvedAt?'Утверждён редактором '+qeDate(q.approvedAt):'Примите текст во вкладке «Проверка текста».'):'Сначала закройте проблемы и неподтверждённые критерии.'},
   {id:'meta',title:'SEO-поля и структура',ok:!!(qeCurrent(a)&&!q.automatic.issues.some(x=>x.criterion===6&&x.severity==='blocker')),reason:'Title, Description, H1 и иерархия заголовков в текущей версии.'},
-  {id:'visuals',title:'Реальные изображения вставлены и утверждены',ok:actual.length===imgs.length&&unique.size>=4&&matched,reason:`В HTML: ${imgs.length}; разных файлов: ${unique.size}; утверждённых карточек: ${approved.length}. Требуется минимум 4 разных файла с соответствующими утверждёнными карточками. Карточка без <img> не считается изображением.`},
+  {id:'visuals',title:'Реальные изображения вставлены и утверждены',ok:actual.length===imgs.length&&unique.size>=target&&matched&&assetsAvailable,reason:`В HTML: ${imgs.length}; разных файлов: ${unique.size}; утверждённых карточек: ${approved.length}. Требуется ${target} разных файлов по формату статьи с соответствующими утверждёнными карточками. ${assetsAvailable?'':'Не все локальные файлы загружены.'} Карточка без <img> не считается изображением.`},
   {id:'alt',title:'ALT у каждого изображения',ok:imgs.length>0&&imgs.every(img=>(img.getAttribute('alt')||'').trim().length>0),reason:'Проверяется ALT в итоговом HTML, а не только в карточке визуала.'}
  ];
 }
@@ -1080,93 +1093,8 @@ function renderCriteria(){
  if(!qeHelperFrame)qeEnsureHelper();qeUpdateHelperUI();if(qeTab==='text'&&qeCandidateCurrent(a))qeRevisionPreview();
 }
 
-function prepareGeneration(){
- const a=get();
- const qualityRequirements=criteria.filter(c=>c!=='Фотографии');
- const editorialRestrictions=[
-  'Не писать ради объёма и не повторять одну мысль разными словами.',
-  'Не использовать шаблонные AI-фразы, бюрократический язык и пустые вводные абзацы.',
-  'Не придумывать характеристики оборудования, цифры, нормативы, цены, источники или результаты исследований.',
-  'Не выдавать предположение за установленный технический факт.',
-  'Не превращать информационную статью в рекламную страницу.',
-  'Не вставлять оборудование в каждый раздел искусственно.',
-  'Не использовать ключевые слова механически ради SEO.',
-  'Не давать общие банальные советы вместо конкретного содержания.',
-  'Если данных недостаточно для достоверного утверждения — явно отметить необходимость проверки.'
- ];
- const generationInstructions=[
-  'Пиши как опытный технический редактор АЛЬФАПРОМ: экспертно, понятно и без шаблонного AI-языка.',
-  'Главная задача — дать читателю практический ответ на его вопрос и помочь принять обоснованное решение по технологии и оборудованию.',
-  'Раскрывай тему по логике: что это и зачем → как работает → варианты решений → критерии выбора → практические рекомендации → вывод.',
-  'Не растягивай текст: каждый раздел должен добавлять новую полезную информацию. Избегай однотипных H2/H3, повторов и пустых абзацев.',
-  'Используй короткие абзацы, списки, таблицы и выделения только там, где они реально улучшают понимание.',
-  'Не выдумывай факты, характеристики, цифры, цены, нормативы, модели и источники. Если данных недостаточно — укажи, что требуется проверка.',
-  'Оборудование АЛЬФАПРОМ связывай с задачей естественно, без навязчивой рекламы.',
-  'Не используй служебные citation-маркеры ChatGPT, Markdown, комментарии и пояснения. Верни только чистый HTML статьи.'
- ]; const brief={
-  context:{company:'АЛЬФАПРОМ',expertise:'пищевое и упаковочное оборудование',format:'экспертный B2B-материал'},
-  seo:{topic:a.topic,primaryQuery:a.keyword,additionalQueries:a.keywords,cluster:a.cluster,intent:a.intent},
-  userTask:{problem:a.problem,equipment:a.equipment,internalLinks:a.links},
-  meta:{title:a.title,description:a.description,h1:a.h1},
-  structure:a.outline,
-  research:{facts:[],sources:[],technicalData:[],factsToVerify:[]},
-  generationInstructions,
-  qualityRequirements,
-  editorialRestrictions,
-  style:[
-   'Короткие читаемые абзацы.',
-   'Сильные H2/H3 и логичная композиция.',
-   'Естественный человеческий язык без шаблонных AI-фраз и бюрократизмов.',
-   'Конкретные факты, практические рекомендации, таблицы и списки там, где они действительно полезны.',
-   'Премиальная подача профессионального журнала об оборудовании.',
-   'Коммерческая часть ненавязчивая и преимущественно в конце.'
-  ],
-  output:{
-   format:'HTML',
-   language:'ru',
-   rules:[
-    'Готовое содержимое статьи по утверждённой структуре.',
-    'Не включать <html>, <head> или <body>.',
-    'Не использовать Markdown.',
-    'Использовать корректные H2/H3, списки, таблицы и абзацы там, где они действительно нужны.',
-    'HTML должен быть чистым: без служебных citation-маркеров, внутренних ссылок ChatGPT, комментариев и технических идентификаторов.',
-    'Не добавлять вступление от автора, заключение о процессе генерации или пояснение к HTML — только содержание статьи.',
-    'Вернуть только готовый контент статьи.'
-   ]
-  }
- };
- const promptData=JSON.stringify({
-  seo:brief.seo,
-  task:brief.userTask,
-  meta:brief.meta,
-  structure:brief.structure,
-  research:brief.research
- },null,2);
- brief.prompt=[
-  'ЗАДАЧА НА ГЕНЕРАЦИЮ SEO-СТАТЬИ АЛЬФАПРОМ',
-  '',
-  ...generationInstructions,
-  '',
-  'ДАННЫЕ СТАТЬИ:',
-  promptData
- ].join('\n');
- a.generationBrief=brief;
- a.status='work';
- save(true);
- const e=document.getElementById('generationBrief');
- e.innerHTML='<h3>Промт для генерации статьи</h3><p class="muted">Это основная задача для ChatGPT. Ниже — только ключевые правила и данные конкретной статьи.</p><pre style="white-space:pre-wrap;max-height:520px;overflow:auto;background:#fff;border:1px solid var(--line);padding:14px;border-radius:7px">'+esc(brief.prompt)+'</pre><div class="actions" style="margin-top:10px"><button class="btn primary" onclick="copyGenerationBrief()">⧉ Скопировать промт</button></div><details style="margin-top:12px"><summary class="muted">Технический бриф</summary><pre style="white-space:pre-wrap;max-height:300px;overflow:auto;background:#fff;border:1px solid var(--line);padding:12px;border-radius:7px;margin-top:8px">'+esc(JSON.stringify(brief,null,2))+'</pre></details>';
- toast('Генерационный бриф подготовлен');
-}
-async function copyGenerationBrief(){
- const a=get();
- if(!a.generationBrief){toast('Сначала подготовьте генерационное задание');return}
- try{
-  await navigator.clipboard.writeText(a.generationBrief.prompt||JSON.stringify(a.generationBrief,null,2));
-  toast('Генерационное задание скопировано');
- }catch(e){
-  toast('Не удалось скопировать автоматически');
- }
-}
+function prepareGeneration(){if(typeof sgPrepare==='function')sgPrepare()}
+async function copyGenerationBrief(){if(typeof sgCopyPrompt==='function')await sgCopyPrompt()}
 async function importArticleFromFile(){
  const input=document.getElementById('articleFileInput');
  if(input)input.click();
@@ -1285,18 +1213,20 @@ function nextArticle(){let a=db.articles.find(x=>x.status!=='done');if(!a){toast
 function addVisual(){
  const a=get();a.visuals=a.visuals||[];let n=a.visuals.length+1;a.visuals.push({id:Date.now(),n,title:'Новый визуал',purpose:'Объяснить ключевую мысль раздела',type:'Editorial / technical',prompt:'Премиальная технологическая визуализация для международного журнала о пищевой промышленности, формат 16:9. ',alt:'',file:`${String(n).padStart(2,'0')}-visual.webp`,status:'todo'});save();show('visuals')}
 function renderVisuals(){
- const a=get();let vs=a.visuals||[];document.getElementById('visualList').innerHTML=vs.length?vs.map((v,i)=>`<div class="visual"><div class="row"><b>Изображение ${String(v.n).padStart(2,'0')} · ${esc(v.title)}</b><span class="status ${v.status==='approved'?'done':'work'}">${v.status==='approved'?'Утверждено':'Ожидает'}</span></div><div class="two" style="margin-top:10px"><div class="field"><label>Назначение</label><input value="${attr(v.purpose)}" onchange="visualField(${i},'purpose',this.value)"></div><div class="field"><label>Тип</label><input value="${attr(v.type)}" onchange="visualField(${i},'type',this.value)"></div></div><div class="field"><label>Промпт</label><textarea onchange="visualField(${i},'prompt',this.value)">${esc(v.prompt)}</textarea></div><div class="two"><div class="field"><label>ALT</label><input value="${attr(v.alt)}" onchange="visualField(${i},'alt',this.value)"></div><div class="field"><label>Файл</label><input value="${attr(v.file)}" onchange="visualField(${i},'file',this.value)"></div></div><div class="actions"><button class="btn primary" onclick="approveVisual(${i})">✓ Утвердить</button><button class="btn danger" onclick="deleteVisual(${i})">Удалить</button></div></div>`).join(''):'<div class="empty">Визуалов пока нет. Добавьте первый визуал.</div>'}
-function visualField(i,k,v){get().visuals[i][k]=v;save(true)}
+ const a=get();let vs=a.visuals||[];document.getElementById('visualList').innerHTML=vs.length?vs.map((v,i)=>`<div class="visual">${typeof sgVisualThumb==='function'?sgVisualThumb(v):''}<div class="row"><b>Изображение ${String(v.n).padStart(2,'0')} · ${esc(v.title)}</b><span class="status ${v.status==='approved'?'done':'work'}">${v.status==='approved'?'Утверждено':'Ожидает'}</span></div><div class="two" style="margin-top:10px"><div class="field"><label>Назначение</label><input value="${attr(v.purpose)}" onchange="visualField(${i},'purpose',this.value)"></div><div class="field"><label>Тип</label><input value="${attr(v.type)}" onchange="visualField(${i},'type',this.value)"></div></div><div class="field"><label>Промпт</label><textarea onchange="visualField(${i},'prompt',this.value)">${esc(v.prompt)}</textarea></div><div class="two"><div class="field"><label>ALT</label><input value="${attr(v.alt)}" onchange="visualField(${i},'alt',this.value)"></div><div class="field"><label>Файл</label><input value="${attr(v.file)}" ${v.assetId?'readonly':''} onchange="visualField(${i},'file',this.value)"></div></div><div class="actions">${v.assetId&&a.generationDraft?`<button class="btn" onclick="sgRegenerateSlot('${attr(v.slot||'')}')">Перегенерировать</button>`:''}<button class="btn primary" onclick="approveVisual(${i})">✓ Утвердить</button><button class="btn danger" onclick="deleteVisual(${i})">Удалить</button></div></div>`).join(''):'<div class="empty">Визуалов пока нет. Добавьте первый визуал.</div>'}
+function visualField(i,k,v){const a=get(),visual=a.visuals[i];if(visual.assetId&&k==='file')return;if(visual.assetId&&k==='alt'){const doc=qeDoc(a);doc.querySelectorAll('img').forEach(img=>{if(img.getAttribute('src')===visual.file)img.alt=v});a.content=doc.body.innerHTML}visual[k]=v;save(true)}
 function approveVisual(i){get().visuals[i].status='approved';save();toast('Визуал утверждён и привязан к статье')}
 function deleteVisual(i){get().visuals.splice(i,1);save()}
 function renderPreview(){
- const a=get();let visualHtml=(a.visuals||[]).filter(v=>v.status==='approved').map(v=>`<figure style="margin:25px 0"><div style="background:#f1f3f5;padding:55px;text-align:center;color:#777;border-radius:7px">УТВЕРЖДЁННЫЙ ВИЗУАЛ<br><small>${esc(v.file)}</small></div><figcaption>${esc(v.alt||v.title)}</figcaption></figure>`).join('');
- let html=a.content||'<p>Статья пока пуста.</p>';html=html.replace(/<h2>/g,'<h2>').replace(/<\/p>\s*(?=<h2>)/g,'</p>');document.getElementById('preview').innerHTML=`<div class="muted">${esc(a.cluster||'SEO-статья')}</div><h1>${esc(a.h1||a.topic)}</h1><p class="muted">${esc(a.description||'')}</p><div class="toc"><b>Содержание</b><div>${(a.outline||'').split('\\n').map(x=>esc(x)).join('<br>')}</div></div>${html}${visualHtml}<hr><p><b>Экспертный вывод</b></p><p>Финальная версия должна пройти 23 критерия АЛЬФАПРОМ, фактчек и визуальную проверку.</p>`}
+ const a=get();if(!a)return;const html=typeof sgDisplayHtml==='function'?sgDisplayHtml(a.content||'<p>Статья пока пуста.</p>',a.visuals||[]):a.content||'';
+ document.getElementById('preview').innerHTML=`<div class="muted">${esc(a.cluster||'SEO-статья')}</div><h1>${esc(a.h1||a.topic)}</h1><p class="muted">${esc(a.description||'')}</p>${html}`;
+ if(typeof sgLoadAssets==='function')sgLoadAssets(a);
+}
 function htmlExport(){
  const a=get();return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(a.title)}</title><meta name="description" content="${attr(a.description)}"></head><body><article><h1>${esc(a.h1||a.topic)}</h1>${a.content||''}</article></body></html>`;
 }
 function download(name,text,type='text/plain'){let b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
-function downloadHTML(){download('article.html',htmlExport(),'text/html');document.getElementById('exportStatus').innerHTML='<b>HTML сформирован.</b><p class="muted">В следующей версии сюда добавим реальные изображения и ZIP-пакет.</p>'}
+function downloadHTML(){download('article.html',htmlExport(),'text/html');document.getElementById('exportStatus').innerHTML='<b>HTML сформирован.</b><p class="muted">Для переноса файлов изображений скачайте ZIP со статьёй и WebP.</p>'}
 function downloadSEO(){let a=get();download('SEO.txt',`TITLE: ${a.title}\\nDESCRIPTION: ${a.description}\\nURL: /blog/${slug(a.topic)}/\\nH1: ${a.h1}\\n\\nОСНОВНОЙ ЗАПРОС: ${a.keyword}\\nДОПОЛНИТЕЛЬНЫЕ: ${a.keywords}\\nКЛАСТЕР: ${a.cluster}\\n\\nВНУТРЕННИЕ ССЫЛКИ:\\n${a.links}`);document.getElementById('exportStatus').innerHTML='<b>SEO.txt сформирован.</b>'}
 function downloadJSON(){download('project.json',JSON.stringify(db,null,2),'application/json');document.getElementById('exportStatus').innerHTML='<b>Проект сохранён в JSON.</b>'}
 function slug(s){return (s||'article').toLowerCase().replace(/[^a-zа-я0-9]+/gi,'-').replace(/^-|-$/g,'')}
@@ -1314,5 +1244,5 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function attr(s){return esc(s)}
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-</body>
+<script src="generation.js"></script></body>
 </html>

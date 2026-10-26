@@ -54,6 +54,11 @@ class HelperTests(unittest.TestCase):
             self.assertIn('--ignore-user-config', command)
             self.assertIn('--ephemeral', command)
             self.assertIn('--json', command)
+            self.assertEqual(command[command.index('--model') + 1], 'gpt-6.1-sol')
+            self.assertIn('model_reasoning_effort="high"', command)
+            self.assertIn('model_provider="openai"', command)
+            self.assertIn('--disable', command)
+            self.assertIn('image_generation', command)
             self.assertIn('forced_login_method="chatgpt"', command)
             self.assertIn('read-only', command)
             self.assertIn('features.shell_tool=false', command)
@@ -76,7 +81,7 @@ class HelperTests(unittest.TestCase):
         calls = []
         fake = SimpleNamespace(path='/health', valid_host=lambda: True, send=lambda code, data: calls.append((code, data)))
         helper.Handler.do_GET(fake)
-        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 6})])
+        self.assertEqual(calls, [(200, {'service': 'alfaprom-seo-helper', 'version': 7})])
 
     def test_progress_contains_no_article_or_account_data(self):
         helper.set_progress('progress-test', 'generating')
@@ -129,6 +134,48 @@ class HelperTests(unittest.TestCase):
                 kill.assert_called_once_with(999999, helper.signal.SIGTERM)
         finally:
             helper.ACTIVE.clear()
+
+
+    def test_generation_schema_has_seo_visuals_and_notes(self):
+        schema = helper.response_schema('generate')
+        self.assertEqual(set(schema['required']), {'html', 'seo', 'visuals', 'verificationNotes'})
+        self.assertEqual(schema['properties']['visuals']['minItems'], 3)
+        self.assertEqual(schema['properties']['visuals']['maxItems'], 11)
+        self.assertIn('anchorId', schema['properties']['visuals']['items']['required'])
+
+    def test_illustration_uses_builtin_subscription_tool(self):
+        import json
+        def fake_process(command, **kwargs):
+            self.assertEqual(command[command.index('--model') + 1], 'gpt-6.1-sol')
+            self.assertIn('--enable', command)
+            self.assertNotIn('--disable', command)
+            self.assertIn('forced_login_method="chatgpt"', command)
+            self.assertIn('features.shell_tool=false', command)
+            target = Path(command[command.index('--output-last-message') + 1])
+            target.write_text(json.dumps({'status': 'generated', 'imagePath': '/allowed/image.png', 'reason': ''}), encoding='utf-8')
+            return SimpleNamespace(pid=999999, returncode=0, communicate=lambda *args, **kw: ('', ''))
+        with patch.object(helper, 'codex_binary', return_value='codex'), patch.object(helper.subprocess, 'Popen', side_effect=fake_process), patch.object(helper, 'read_generated_image', return_value={'mime': 'image/png', 'base64': 'encoded'}) as read:
+            result = helper.execute_task('Image instruction', 'image-test-001', 'illustrate')
+        read.assert_called_once_with('/allowed/image.png')
+        self.assertEqual(result['execution'], {'model': 'gpt-6.1-sol', 'reasoningEffort': 'high', 'authMode': 'chatgpt'})
+        self.assertNotIn('imagePath', result)
+
+    def test_unavailable_image_has_no_fallback(self):
+        def fake_process(command, **kwargs):
+            target = Path(command[command.index('--output-last-message') + 1])
+            target.write_text('{"status":"unavailable","imagePath":"","reason":"tool unavailable"}', encoding='utf-8')
+            return SimpleNamespace(pid=999999, returncode=0, communicate=lambda *args, **kw: ('', ''))
+        with patch.object(helper, 'codex_binary', return_value='codex'), patch.object(helper.subprocess, 'Popen', side_effect=fake_process), patch.object(helper, 'read_generated_image') as read:
+            with self.assertRaisesRegex(ValueError, 'платный API не подключается'):
+                helper.execute_task('Image instruction', 'image-test-002', 'illustrate')
+        read.assert_not_called()
+
+    def test_asset_route_requires_host_origin_and_session(self):
+        for headers in [{}, {'Host': helper.HOST}, {'Host': helper.HOST, 'Origin': helper.ORIGIN}, {'Host': helper.HOST, 'Origin': 'https://example.org', 'X-Alfaprom-Session': helper.SESSION}]:
+            calls = []
+            fake = SimpleNamespace(path='/assets/get', headers=headers, valid_host=lambda: headers.get('Host') == helper.HOST, send=lambda code, data: calls.append((code, data)))
+            helper.Handler.do_POST(fake)
+            self.assertEqual(calls[0][0], 403)
 
 
 if __name__ == '__main__':
