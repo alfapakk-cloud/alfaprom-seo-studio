@@ -19,6 +19,9 @@ from media import save_asset, read_asset, read_generated_image
 
 MODEL = 'gpt-6.1-sol'
 REASONING = 'high'
+PROTOCOL = 9
+# Include the separate cover: current formats use 5/7/11; saved legacy jobs use 3/6/11.
+GENERATION_VISUAL_COUNTS = frozenset([3, 5, 6, 7, 11])
 PORT = 8766
 MAX_BODY = 2_000_000
 HOST = f'127.0.0.1:{PORT}'
@@ -243,7 +246,7 @@ def execute_task(prompt, job_id, operation='revision'):
             if operation in ['edit', 'generate'] and (not isinstance(data.get('seo'), dict) or
                     any(not isinstance(data['seo'].get(key), str) for key in ['title', 'description', 'h1'])):
                 raise ValueError('Ответ не содержит SEO-полей статьи.')
-            if operation == 'generate' and (not isinstance(data.get('visuals'), list) or len(data['visuals']) not in [3, 6, 11]):
+            if operation == 'generate' and (not isinstance(data.get('visuals'), list) or len(data['visuals']) not in GENERATION_VISUAL_COUNTS):
                 raise ValueError('Ответ содержит неверное число визуальных мест.')
             data['execution'] = {'model': MODEL, 'reasoningEffort': REASONING, 'authMode': 'chatgpt'}
             set_progress(job_id, 'complete')
@@ -296,7 +299,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.valid_host():
             return self.send(403, {'error': 'Host rejected'})
         if self.path == '/health':
-            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': 8})
+            return self.send(200, {'service': 'alfaprom-seo-helper', 'version': PROTOCOL})
         if self.path.split('?', 1)[0] == '/generation.js':
             source = Path(__file__).with_name('generation.js')
             if not source.is_file(): source = Path(__file__).parent.parent / 'generation.js'

@@ -68,7 +68,7 @@ function sgOperation(job,operation,prompt,reconnect=false){
  job.deadline=setTimeout(()=>{if(qeHelperJob===job){qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);sgFail('Текущий этап превысил 16 минут. Готовые результаты сохранены.');}},960000);
  if(reconnect)qeEnsureHelper(true);sgSendJob();sgRenderGeneration();
 }
-function sgSendJob(){const j=qeHelperJob;if(j?.kind!=='generation'||j.sent||qeHelperState!=='connected')return;if(sgProtocol<8)return sgFail('Для надёжного сохранения WebP нужен помощник α SEO 1.5.2. Перезапустите помощника после обновления. Текст черновика сохранён.');j.sent=true;clearTimeout(j.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.'+j.operation,jobId:j.id,prompt:j.prompt},QE_HELPER_ORIGIN);sgUpdateUI()}
+function sgSendJob(){const j=qeHelperJob;if(j?.kind!=='generation'||j.sent||qeHelperState!=='connected')return;if(sgProtocol<8)return sgFail('Для надёжного сохранения WebP нужен помощник α SEO 1.5.2. Перезапустите помощника после обновления. Текст черновика сохранён.');if(j.operation==='generate'&&SG_CURRENT_PROFILE_KEYS.includes(j.options.profile)&&sgProtocol<9)return sgFail('Для новых размеров статьи нужен помощник α SEO 1.7.1. После обновления остановите и запустите его через меню α SEO, затем обновите страницу. Запрос GPT ещё не отправлен.');j.sent=true;clearTimeout(j.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.'+j.operation,jobId:j.id,prompt:j.prompt},QE_HELPER_ORIGIN);sgUpdateUI()}
 function sgPersist(job){const a=db.articles.find(x=>x.id===job.articleId);if(a&&job.draft){a.generationDraft=job.draft;save(true)}}
 function sgNextImage(job,reconnect=false){
  if(qeHelperJob!==job)return;if(job.cancelling)return sgFinish(job,'paused');

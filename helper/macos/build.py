@@ -19,16 +19,16 @@ shutil.copytree(ROOT / 'helper/lib', resources / 'helper/lib', dirs_exist_ok=Tru
 for library in (resources / 'helper/lib').glob('*.dylib'):
     subprocess.run(['codesign', '--force', '--sign', '-', '--timestamp=none', str(library)], check=True)
 shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
-# UI updates use the existing protocol-8 backend and do not change sign-in settings.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.7.0', 'generation.js'), encoding='utf-8')
+# Protocol 9 accepts current and legacy visual counts; sign-in settings stay unchanged.
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.7.1', 'generation.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.7.0',
-    'CFBundleVersion': '11',
+    'CFBundleShortVersionString': '1.7.1',
+    'CFBundleVersion': '12',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

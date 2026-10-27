@@ -20,3 +20,24 @@
   const a=fresh();a.generationDraft=sgParseGeneration(sgFixture(a),a,{profile:'short',images:true,audit:false});a.generationOptions={profile:'small7000',images:true,audit:false};const operation=sgOperation;let profile,total;sgOperation=j=>{profile=j.options.profile;total=j.draft.visuals.length};try{sgStart(true);assert(profile==='short'&&total===3,'Старая очередь получила новые требования')}
   finally{sgOperation=operation;qeClearHelperJob()}
  });
+await test('Новые размеры не отправляются старому помощнику до обновления',()=>{
+ const old={protocol:sgProtocol,state:qeHelperState,frame:qeHelperFrame,job:qeHelperJob,fail:sgFail,update:sgUpdateUI};let sent=0,error='';
+ try{qeHelperState='connected';sgProtocol=8;qeHelperFrame={contentWindow:{postMessage(){sent++}}};sgFail=m=>{error=m;qeHelperJob=null};sgUpdateUI=()=>{};
+  for(const profile of SG_CURRENT_PROFILE_KEYS){qeHelperJob={kind:'generation',operation:'generate',options:{profile},sent:false};sgSendJob();assert(!qeHelperJob&&error.includes('1.7.1')&&error.includes('ещё не отправлен'),'Нет понятной ранней ошибки')}
+  assert(sent===0,'Запрос потратил лимит на несовместимом помощнике');
+ }finally{sgProtocol=old.protocol;qeHelperState=old.state;qeHelperFrame=old.frame;qeHelperJob=old.job;sgFail=old.fail;sgUpdateUI=old.update}
+});
+await test('Помощнику протокола 9 доступны все новые форматы',()=>{
+ const old={protocol:sgProtocol,state:qeHelperState,frame:qeHelperFrame,job:qeHelperJob,update:sgUpdateUI};let sent=0;
+ try{qeHelperState='connected';sgProtocol=9;qeHelperFrame={contentWindow:{postMessage(data){assert(data.type==='alfaprom.generate','Другая операция');sent++}}};sgUpdateUI=()=>{};
+  for(const profile of SG_CURRENT_PROFILE_KEYS){qeHelperJob={kind:'generation',operation:'generate',options:{profile},sent:false};sgSendJob();assert(qeHelperJob.sent,'Новый формат заблокирован')}
+  assert(sent===3,'Не все форматы отправлены');
+ }finally{sgProtocol=old.protocol;qeHelperState=old.state;qeHelperFrame=old.frame;qeHelperJob=old.job;sgUpdateUI=old.update}
+});
+await test('Старые форматы и продолжение изображений работают с протоколом 8',()=>{
+ const old={protocol:sgProtocol,state:qeHelperState,frame:qeHelperFrame,job:qeHelperJob,update:sgUpdateUI};let sent=0;
+ try{qeHelperState='connected';sgProtocol=8;qeHelperFrame={contentWindow:{postMessage(){sent++}}};sgUpdateUI=()=>{};
+  for(const [operation,profile]of [['generate','short'],['generate','medium'],['generate','large'],['illustrate','medium12000'],['audit','medium12000']]){qeHelperJob={kind:'generation',operation,options:{profile},sent:false};sgSendJob();assert(qeHelperJob.sent,'Совместимая операция заблокирована')}
+  assert(sent===5,'Операции потеряны');
+ }finally{sgProtocol=old.protocol;qeHelperState=old.state;qeHelperFrame=old.frame;qeHelperJob=old.job;sgUpdateUI=old.update}
+});
