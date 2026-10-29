@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Студия АЛЬФАПРОМ · 1.7.2</title>
+<title>SEO-Студия АЛЬФАПРОМ · 1.8.0</title>
 <style>
 :root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 <body>
 <div class="app">
 <aside class="side">
-  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.7.2</div></div>
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.0</div></div>
   <div class="nav">
     <button class="active" data-view="plan">▣ SEO-план</button>
     <button data-view="article">✎ Статья</button>
@@ -172,7 +172,7 @@ let uiEditorMode='text',uiPreviewMode='auto',uiSaveError=false,uiSaved=false,uiH
 const uiFactPageSize=10;
 let uiPreviewDocument=null;
 const criteria=[
-'Высокий поисковый потенциал','Большой экспертный материал','Фактическая точность','Проверка источников','SEO-ключи','SEO-структура','Внутренняя перелинковка','Оригинальность','Фотографии','Ненавязчивая коммерция','Целевой трафик → продажа','Без каннибализации','Практическая ценность','Экономика и расчёты','Варианты решений','Пошаговые алгоритмы','Практические чек-листы','Таблицы и сравнения','Реальный FAQ','Связь задачи с оборудованием','Экспертный вывод','Экспертность, достоверность и доверие — автор/компания, практическая компетентность, проверяемые источники, актуальность данных, отсутствие неподтверждённых утверждений.','Премиальное оформление текста'
+'Соответствие запросу и интенту','Большой экспертный материал','Фактическая точность','Проверка источников','SEO-ключи','SEO-структура','Внутренняя перелинковка','Самостоятельная подача и полезная конкретика','Фотографии','Ненавязчивая коммерция','Целевой трафик → продажа','Отличие от материалов блога АЛЬФАПРОМ','Практическая ценность','Экономика и расчёты','Варианты решений','Пошаговые алгоритмы','Практические чек-листы','Таблицы и сравнения','Полезный FAQ по теме','Связь задачи с оборудованием','Экспертный вывод','Доверие и прозрачность публикации','Премиальное оформление текста'
 ];
 let qeTransferPending=null,qeLocalTransferNotice='';
 function qeReadTransfer(){try{const el=document.getElementById('alfapromTransfer');if(!el)return null;const data=JSON.parse(el.textContent);return data&&Array.isArray(data.articles)?data:null}catch(e){return null}}
@@ -432,35 +432,35 @@ function refillArticle(id){
  toast('SEO-поля перезаполнены');
 }
 // Quality Engine: local checks, evidence and editorial decisions belong to one article version.
-const QE_VERSION=1;
+const QE_VERSION=2;
 let qeTab='text',qeFilter='attention',qeImportant=false,qePromptArticle=null;
 let uiQualitySelection={};
 const qeLabels={pass:'Пройдено',problem:'Проблема',unverified:'Не проверено',na:'Не применимо',stage:'Этап визуалов'};
 const qeManualOnly=[1,3,4,8,12,22];
 const qeConditional=[14,15,16,17,18];
 const qeGuides=[
- 'Укажите данные о спросе: запрос, регион, дату и источник. Заполненное поле запроса не подтверждает поисковый потенциал.',
+ 'Проверьте соответствие выбранному запросу и намерению читателя из РФ. Статья решает конкретную задачу; частотность и прогноз трафика не придумываются и не входят в допуск текста.',
  'Проверьте полноту ответа на задачу читателя, экспертную конкретику и отсутствие воды. Объём сам по себе не доказывает качество.',
- 'Проверьте все существенные утверждения, ограничения и цифры. Подтвердите карточки фактов ниже; автоматический поиск может пропустить утверждения.',
- 'Откройте первоисточники. Убедитесь, что они подтверждают конкретные утверждения, а данные актуальны. Наличие URL не означает проверку.',
+ 'Проверьте существенные утверждения, ограничения и цифры по реально открытым первоисточникам. Помощник ищет подтверждения; неподтверждённую конкретику исправляет без потери пользы.',
+ 'Нужны доступные первоисточники, точные выдержки и связь с утверждениями. Помощник загружает документы и проверяет цитаты. Публичные ссылки — только на технические материалы разрешённых зарубежных заводов.',
  'Оцените естественность основного и дополнительных запросов, словоформы и отсутствие переспама.',
  'Проверьте логичность H2/H3, соответствие Title, Description и H1 теме и интенту, оглавление и вопросы читателей.',
  'Проверьте смысл и работоспособность внутренних ссылок в самом тексте. Список в SEO-задании не заменяет ссылки в статье.',
- 'Сравните с материалами конкурентов. Укажите, какую дополнительную пользу даёт статья и с чем сравнивали. Процент уникальности не рассчитывается.',
+ 'Проверьте самостоятельную подачу, полезную конкретику, повторы и заимствования. Не требуйте ручного анализа всей выдачи или вымышленного процента уникальности.',
  'Реальные изображения, их качество, ALT и места вставки проверяются после утверждения текста, во вкладке «Перед публикацией».',
  'Основная часть должна помогать читателю; прямое коммерческое предложение уместно преимущественно в конце.',
  'Проверьте путь от информационной задачи к выбору оборудования и обращению в АЛЬФАПРОМ.',
- 'Сравните интент и основной запрос с опубликованным блогом и SEO-планом. Поиск по заголовкам — только подсказка; объясните, как разведены пересечения.',
+ 'Самостоятельно откройте близкие материалы блога АЛЬФАПРОМ и сопоставьте тему, содержание и интент. При пересечении уточните фокус статьи. Совпадение заголовков не доказывает дублирование.',
  'Нужны применимые рекомендации, ограничения, ошибки и условия выбора под задачу читателя.',
  'Если нужны расчёты, проверьте исходные данные, допущения и формулы. Если расчёты не помогают этой теме, объясните неприменимость.',
  'Сравните реальные варианты под условия читателя либо объясните, почему сравнение здесь не нужно.',
  'Проверьте последовательность действий, если тема предполагает выбор или запуск процесса. Иначе объясните неприменимость.',
  'Проверьте применимость чек-листов к задаче. Не добавляйте формальный список ради галочки.',
  'Таблица нужна, если она упрощает сравнение или выбор. Допустимо обоснованное «не применимо».',
- 'Вопросы должны отражать реальные сомнения покупателей; ответы — давать конкретику, а не повторять статью.',
+ 'Вопросы отражают практические сомнения читателя по теме; ответы дают конкретику. Не требуйте статистику обращений и не называйте придуманные вопросы доказанными запросами покупателей.',
  'Должна быть понятна связь операции, технологии, оборудования и критериев его выбора.',
  'Вывод даёт конкретные рекомендации и ограничения; не повторяет введение и не сводится к рекламе.',
- 'Проверьте автора/компанию, практическую компетентность, источники и актуальность данных. Не приписывайте несуществующий опыт.',
+ 'Указан реальный издатель АЛЬФАПРОМ, доступна информация о компании; материалы и даты указаны корректно. Нельзя выдумывать автора, эксперта, опыт и кейсы или называть GPT первоисточником.',
  'Оцените композицию, ритм, заголовки, абзацы, списки и таблицы. Уберите шаблонные обороты, служебные маркеры и однообразие.'
 ];
 function qeHash(value){
@@ -519,28 +519,30 @@ function qeAnalyze(a){
  const sentences=(blocks.length?blocks:[text]).flatMap(block=>block.match(/[^.!?]+(?:[.!?]|$)/g)||[]).map(s=>s.trim());
  for(const claim of sentences){if(claim.length<25||claim.length>700)continue;if(/\d\s*(?:%|°|градус|руб|₽|кВт|Вт\b|бар\b|МПа|кПа|кг|тонн|час|мин|сек|сут|дн|недел|месяц|лет|год)|\b(?:ГОСТ|ISO|ТР ТС)\b|увеличива\S*\s+срок|гарантиру\S*|окупа\S*/i.test(claim)){if(!facts.some(f=>f.claim===claim))facts.push({claim,sourceUrl:'',sourceQuote:'',origin:'Найдено автоматически'})}}
  if(a.contentProfile&&typeof sgProfile==='function'){const p=sgProfile(a),n=sgPlainLength(a.content);if(p&&(n<p.min||n>p.max))issue(2,'Объём не соответствует выбранному формату',`Сейчас ${n} знаков; для формата нужно ${p.min}–${p.max}.`,'Содержательно скорректируйте объём, сохранив полезные разделы и реальные изображения.');}
+ if(typeof qaExternalLinks==='function'&&!window.QA_TEST_LEGACY)for(const x of qaExternalLinks(a))issue(22,'Внешняя ссылка вне разрешённых материалов заводов','Адрес: '+x.url,'Замените ссылку на технический первоисточник разрешённого зарубежного завода или оставьте точное название материала без активной ссылки.');
  return {issues,observations,facts};
 }
 function qeCurrent(a){return a.quality?.version===QE_VERSION&&a.quality.snapshot===qeFingerprint(a)}
 function qeFacts(a){
  const q=a.quality;if(!q)return [];
  const all=[...(q.automatic?.facts||[]),...(q.review?.facts||[]),...(q.addedFacts||[])],unique=new Map();
- all.forEach(f=>{const key=qeNormalize(f.claim),old=unique.get(key);if(!old)unique.set(key,{...f,key});else unique.set(key,{...old,sourceUrl:old.sourceUrl||f.sourceUrl,sourceQuote:old.sourceQuote||f.sourceQuote})});
+ all.forEach(f=>{const key=qeNormalize(f.claim),old=unique.get(key);if(!old)unique.set(key,{...f,key});else unique.set(key,{...old,sourceUrl:old.sourceUrl||f.sourceUrl,sourceQuote:old.sourceQuote||f.sourceQuote,verification:f.verification||old.verification})});
  return [...unique.values()].map(f=>({...f,...q.factDecisions?.[f.key],key:f.key}));
 }
 function qeResults(a){
  const q=a.quality,active=qeCurrent(a),facts=active?qeFacts(a):[];
  return criteria.map((name,i)=>{
-  const id=i+1;if(id===9)return {id,name,status:'stage',method:'Перед публикацией',reason:qeGuides[i]};
+  const id=i+1;if(id===9&&active&&typeof qaAutoReview==='function'&&qaAutoReview(a))return qaVisualResult(a);if(id===9)return {id,name,status:'stage',method:'Перед публикацией',reason:qeGuides[i]};
   if(!active)return {id,name,status:'unverified',method:'Нужна проверка текущей версии',reason:qeGuides[i]};
   const auto=q.automatic.issues.filter(x=>x.criterion===id&&x.severity==='blocker');
   if(auto.length)return {id,name,status:'problem',method:'Автоматическая проверка',reason:auto.map(x=>x.title).join('; ')};
-  const manual=q.manual?.[id],ai=q.review?.criteria.find(x=>x.id===id);
-  let status=manual?.status||(ai?.status==='problem'?'problem':((q.review?.acceptedAt||q.review?.automatedAt)&&!qeManualOnly.includes(id))?ai?.status:null)||'unverified';
-  let reason=manual?.reason||ai?.reason||qeGuides[i],method=manual?'Решение редактора':ai&&qeManualOnly.includes(id)?'Оценено GPT · нужно подтверждение данных':q.review?.automatedAt?'Редакционная оценка GPT':q.review?.acceptedAt?'AI-оценка, принята редактором':ai?'AI-оценка: ожидает решения редактора':'Нужна редакционная проверка';
-  if(ai&&qeManualOnly.includes(id)&&status==='unverified'&&ai.status==='pass')reason='GPT не нашёл недостатков в доступных данных. Для закрытия критерия нужны подтверждения редактора. '+reason;
+  const manual=q.manual?.[id],ai=q.review?.criteria.find(x=>x.id===id),trusted=typeof qaAutoReview==='function'&&qaAutoReview(a);
+  let status=manual?.status||(ai?.status==='problem'?'problem':((q.review?.acceptedAt||q.review?.automatedAt)&&(!qeManualOnly.includes(id)||trusted))?ai?.status:null)||'unverified';
+  let reason=manual?.reason||ai?.reason||qeGuides[i],method=manual?'Решение редактора':ai&&qeManualOnly.includes(id)&&!trusted?'Оценено GPT · нужно подтверждение данных':q.review?.automatedAt?'Редакционная оценка GPT':q.review?.acceptedAt?'AI-оценка, принята редактором':ai?'AI-оценка: ожидает решения редактора':'Нужна редакционная проверка';
+  if(ai&&qeManualOnly.includes(id)&&!trusted&&status==='unverified'&&ai.status==='pass')reason='GPT не нашёл недостатков в доступных данных. Для закрытия критерия нужны подтверждения редактора. '+reason;
   if((id===3||id===4)&&status==='pass'&&facts.some(f=>f.status!=='confirmed')){status='unverified';reason='В списке остались неподтверждённые факты. '+reason}
   if((id===3||id===4)&&facts.some(f=>f.status==='problem')){status='problem';reason='В карточках фактов отмечена ошибка. '+reason}
+  if(trusted&&id===7&&q.review.linkChecks?.some(x=>!x.ok)){status=q.review.linkChecks.filter(x=>!x.ok).every(x=>x.kind==='unavailable')?'unverified':'problem';reason=(status==='unverified'?'Временный сбой проверки доступности ссылок: ':'Не удалось открыть ссылки: ')+q.review.linkChecks.filter(x=>!x.ok).map(x=>x.url).join(', ');method='Проверка адресов помощником'}
   return {id,name,status,reason,method};
  });
 }
@@ -754,6 +756,7 @@ const QE_HELPER_ORIGIN='http://127.0.0.1:8766';
 const qeHelperStages={connecting:{percent:5,label:'Подключаем помощника'},authenticating:{percent:15,label:'Проверяем вход через ChatGPT'},starting:{percent:25,label:'Передаём задание GPT'},generating:{percent:35,label:'GPT дорабатывает статью'},validating:{percent:95,label:'Получаем и проверяем HTML'},complete:{percent:100,label:'Доработка завершена'}};
 function qeHelperDuration(seconds){seconds=Math.max(0,Math.round(seconds));return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')}
 function qeHelperProgressView(job,now=Date.now()){
+ if(job.kind==='autofix'&&typeof qaProgressView==='function')return qaProgressView(job,now);
  if(job.kind==='generation'&&typeof sgProgressView==='function')return sgProgressView(job,now);
  const elapsed=Math.max(0,((job.finishedAt||now)-job.started)/1000),stage=qeHelperStages[job.stage]||qeHelperStages.connecting;
  // Model events report stages, not a completion fraction. Interpolation is explicitly an estimate.
@@ -769,10 +772,10 @@ function qeHelperProgressView(job,now=Date.now()){
 function qeHelperStatusText(){
  if(qeHelperState==='connected')return '● Программа активирована · помощник подключён';
  if(qeHelperState==='launching')return 'Запрос на запуск отправлен. Подтвердите открытие приложения на Mac, если браузер попросит. Подключаемся…';
- if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.5 и перезапустите его через меню α SEO.';
+ if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.8.0 и перезапустите его через меню α SEO.';
  if(qeHelperState==='offline')return 'Программа завершила работу или связь потеряна. Запустите помощника и нажмите «Проверить подключение».';
  if(qeHelperState==='checking')return 'Проверяем подключение помощника…';
- if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.5. Студия проверит подключение снова автоматически.';
+ if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.8.0. Студия проверит подключение снова автоматически.';
  return 'Запустите помощника один раз. Его статус, ход доработки и результат появятся на этой странице.';
 }
 function qeRenderHelperProgress(){
@@ -780,6 +783,7 @@ function qeRenderHelperProgress(){
  const p=qeHelperProgressView(job);return `<div id="qeHelperProgress" class="qe-progress-card ${job.stage==='complete'?'done':''}"><div class="qe-progress-heading"><b id="qeHelperStage" role="status">${esc(p.label)}</b><strong id="qeHelperPercent">${p.percent}%</strong></div><div id="qeHelperBar" class="qe-progress-track" role="progressbar" aria-label="Оценочный прогресс проверки и доработки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.percent}"><span style="width:${p.percent}%"></span></div><p id="qeHelperTime" class="qe-note">${esc(p.time)}</p>${job.articleId!==get()?.id?'<p class="qe-note">Дорабатывается: '+esc(job.articleTitle||'другая статья')+'</p>':''}<p class="qe-note">Процент и время приблизительные: GPT сообщает этапы работы, но не точное время завершения.</p>${qeHelperJob?'<button class="btn small" onclick="qeCancelPlusRevision()">Остановить доработку</button>':''}</div>`;
 }
 function qeUpdateHelperUI(){
+ if(typeof qaUpdateUI==='function')qaUpdateUI();
  uiRenderHelperStatus();if(typeof sgUpdateUI==='function')sgUpdateUI();
  const note=document.getElementById('qeHelperLaunchNote');if(note){note.textContent=qeHelperStatusText();note.dataset.state=qeHelperState}
  const job=qeHelperJob||(qeHelperFinished?.articleId===get()?.id?qeHelperFinished:null);if(!job)return;const p=qeHelperProgressView(job),stage=document.getElementById('qeHelperStage'),bar=document.getElementById('qeHelperBar');
@@ -803,11 +807,12 @@ function qeEnsureHelper(reconnect=false){
 }
 function qeConnectHelper(){qeEnsureHelper(true)}
 function qeLaunchHelperFromStudio(){qeHelperState='launching';qeHelperLaunchUntil=Date.now()+18000;qeEnsureHelper(true);toast('Запрос на запуск помощника отправлен')}
-function qeSendHelperJob(){const job=qeHelperJob;if(job?.kind==='generation'&&typeof sgSendJob==='function')return sgSendJob();if(!job||job.sent||qeHelperState!=='connected')return;job.sent=true;clearTimeout(job.timer);qeHelperFrame.contentWindow.postMessage({type:job.operation==='audit'?'alfaprom.audit':job.operation==='edit'?'alfaprom.edit':'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
+function qeSendHelperJob(){const job=qeHelperJob;if(job?.kind==='autofix')return qaSendJob();if(job?.kind==='generation'&&typeof sgSendJob==='function')return sgSendJob();if(!job||job.sent||qeHelperState!=='connected')return;job.sent=true;clearTimeout(job.timer);qeHelperFrame.contentWindow.postMessage({type:job.operation==='audit'?'alfaprom.audit':job.operation==='edit'?'alfaprom.edit':'alfaprom.revise',jobId:job.id,prompt:job.prompt},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeStartPlusRevision(){qeStartQualityCycle('cycle')}
 function qeCancelPlusRevision(){const job=qeHelperJob;if(!job)return;if(!job.sent)return qeFinishHelperError('Подключение остановлено. Исходная статья сохранена.');job.cancelling=true;qeHelperFrame?.contentWindow.postMessage({type:'alfaprom.cancel',jobId:job.id},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qeClearHelperJob(){const job=qeHelperJob;if(job){clearTimeout(job.timer);clearTimeout(job.deadline);clearInterval(job.tick)}qeHelperJob=null;return job}
 function qeFinishHelperError(message){
+ if(qeHelperJob?.kind==='autofix')return qaFail(message);
  if(qeHelperJob?.kind==='generation'&&typeof sgFail==='function')return sgFail(message);
  const job=qeClearHelperJob();qeHelperFinished=null;
  if(job?.mode&&qeQualitySourceCurrent(job)){
@@ -823,10 +828,11 @@ function qeHandleHelperMessage(event){
  const data=event.data;
  if(typeof sgHandleAssetMessage==='function'&&sgHandleAssetMessage(data))return;
  if(data.type==='alfaprom.helper.ready'){
-  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=6?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для проверки 23 критериев нужен помощник 1.4. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
+  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=(typeof qaStart==='function'&&!window.QA_TEST_LEGACY?10:6)?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для нового стандарта проверки нужен помощник 1.8.0. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
  }
  if(data.type==='alfaprom.helper.offline'){qeHelperState='offline';qeUpdateHelperUI();return}
  const job=qeHelperJob;if(!job||data.jobId!==job.id)return;
+ if(job.kind==='autofix')return qaHandleMessage(job,data);
  if(job.kind==='generation'&&typeof sgHandleJobMessage==='function')return sgHandleJobMessage(job,data);
  if(data.type==='alfaprom.revision.progress'){qeHelperLastSeen=Date.now();if(qeHelperStages[data.stage]&&qeHelperStages[data.stage].percent>=qeHelperStages[job.stage].percent)job.stage=data.stage==='complete'?'validating':data.stage;qeUpdateHelperUI();return}
  if(data.type==='alfaprom.revision.error')return qeFinishHelperError(String(data.error||'Доработка не завершена. Исходная статья сохранена.'));
@@ -840,10 +846,10 @@ function qeHandleHelperMessage(event){
 }
 window.addEventListener('message',qeHandleHelperMessage);
 
-function qeRenderHelperControls(a){return qeRenderHelperProgress()+(qeHelperRecovery?'<div class="qe-notice">Полученный результат сохранён. <button class="btn small" onclick="qeDownloadHelperRecovery()">Скачать полученный HTML</button></div>':'')}
+function qeRenderHelperControls(a){if(qeHelperJob?.kind==='autofix')return '';return qeRenderHelperProgress()+(qeHelperRecovery?'<div class="qe-notice">Полученный результат сохранён. <button class="btn small" onclick="qeDownloadHelperRecovery()">Скачать полученный HTML</button></div>':'')}
 function qeRenderRevision(a){
  const active=qeCurrent(a),c=qeRevisionCandidate?.articleId===a.id?qeRevisionCandidate:null,valid=qeCandidateCurrent(a),oldWords=qeText(qeDoc(a)).split(/\s+/).filter(Boolean).length;
- return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><h3>${c?'Новый вариант':'Доработка статьи'}</h3><span class="pill">Текущая статья · ${qeFingerprint(a).slice(0,8)}</span></div><p class="qe-note">Задание составляется по актуальному анализу. Текущая статья заменится после просмотра и применения нового варианта.</p>${qeRenderHelperControls(a)}
+ return `<div class="card qe-panel qe-revision" id="qeRevision" style="margin-top:18px"><div class="qe-heading"><h3>${c?'Новый вариант':'Доработка статьи'}</h3><span class="pill">Текущая статья · ${qeFingerprint(a).slice(0,8)}</span></div><p class="qe-note">${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Точечные исправления сохраняются в выбранной версии после перепроверки. Предыдущий текст доступен для восстановления.':'Задание составляется по актуальному анализу. Текущая статья заменится после просмотра и применения нового варианта.'}</p>${qeRenderHelperControls(a)}
  ${c?`<div id="qeRevisionReturn"><p class="qe-notice">${valid?'Новый вариант готов. Текущая статья ещё не заменена.':'Статья или анализ изменились. Этот вариант можно просмотреть, но нельзя применить.'}</p><p class="qe-note">${esc(c.filename)} · Текущая статья: ${oldWords} слов → новый вариант: ${c.words} слов.</p>${c.words<oldWords*.65?'<p class="qe-notice">Новый вариант заметно короче. Проверьте сохранность полезных разделов.</p>':''}${qeRenderCandidateReview(c,a)}${c.seo?'<details><summary>Изменения SEO-полей</summary>'+['title','description','h1'].map(k=>'<p><b>'+k+'</b><br>Было: '+esc(a[k]||'—')+'<br>Стало: '+esc(c.seo[k])+'</p>').join('')+'</details>':''}${!c.token?'<label class="qe-checkline"><input id="qeRevisionIdentity" type="checkbox"><span>Я проверил, что файл без метки версии относится к этой статье.</span></label>':''}<div class="actions"><button class="btn" onclick="qeRevisionPreview()" ${!valid?'disabled':''}>Посмотреть изменения</button><button class="btn primary" onclick="qeApplyRevision()" ${!valid?'disabled':''}>Применить новый вариант${c.quality?.review?' и отчёт':''}</button><button class="btn" onclick="qeDiscardRevision()">Отклонить вариант</button></div><div id="qeRevisionPreview"></div></div>`:''}
  ${uiRenderManual(a,active)}
  ${a.qualityPreviousVersion?`<details class="ui-details"><summary>Предыдущая версия и изменения</summary><p class="qe-note">Сохранена ${qeDate(a.qualityPreviousVersion.savedAt)}</p><div class="actions"><button class="btn" onclick="qeRevisionPreview(true)">Посмотреть изменения</button><button class="btn" onclick="qeRestorePrevious()">Восстановить предыдущую версию</button></div><div id="qePreviousDiff"></div></details>`:''}</div>`;
@@ -853,6 +859,7 @@ function qeInstallReview(a,review,automated=false){
  if(!qeCurrent(a))a.quality=qeNewCheck(a);
  if(automated)review.automatedAt=new Date().toISOString();
  a.quality.review=review;
+ if(review.standard===2)for(const f of review.facts||[])if(f.verification?.verified)a.quality.factDecisions[qeNormalize(f.claim)]={status:'confirmed',sourceUrl:f.sourceUrl,sourceQuote:f.sourceQuote,at:f.verification.checkedAt,method:'Автопроверка документа и точной выдержки'};
  review.criteria.filter(r=>r.status==='problem').forEach(r=>delete a.quality.manual[r.id]);
  delete a.quality.manual[3];delete a.quality.manual[4];
  a.quality.approvedAt=null;a.quality.final=null;
@@ -860,6 +867,7 @@ function qeInstallReview(a,review,automated=false){
 function qeProblemIds(a){return qeResults(a).filter(r=>r.status==='problem').map(r=>r.id)}
 function qeQualitySourceCurrent(job){const a=get();return !!(a&&a.id===job.articleId&&qeFingerprint(a)===job.fingerprint&&qeRevisionToken(a)===job.token)}
 function qeStartQualityCycle(mode='cycle'){
+ if(typeof qaStart==='function'&&!window.QA_TEST_LEGACY)return qaStart(mode);
  const a=get();if(!a)return;
  if(!['cycle','audit'].includes(mode))return;
  if(qeHelperJob)return qeError('Проверка или доработка уже выполняется. Дождитесь результата либо остановите её.');
@@ -1030,7 +1038,7 @@ function qeConfirmFinal(key,value){
  const a=get(),f=a?.quality?.final;if(!f||f.snapshot!==qeFinalFingerprint(a))return;
  if(!['links','images','layout'].includes(key))return;f.confirmations[key]=value;f.approvedAt=null;save(true);
 }
-function qeFinalReady(a){const f=a.quality?.final;return !!(qeCurrent(a)&&f&&f.snapshot===qeFinalFingerprint(a)&&qeFinalChecks(a).every(x=>x.ok)&&['links','images','layout'].every(k=>f.confirmations[k]))}
+function qeFinalReady(a){if(typeof qaAutoReview==='function'&&qaAutoReview(a))return qaReady(a);const f=a.quality?.final;return !!(qeCurrent(a)&&f&&f.snapshot===qeFinalFingerprint(a)&&qeFinalChecks(a).every(x=>x.ok)&&['links','images','layout'].every(k=>f.confirmations[k]))}
 function qeApproveFinal(){const a=get();if(!a||!qeFinalReady(a))return toast('Сначала завершите финальные проверки');a.quality.final.approvedAt=new Date().toISOString();save(true);toast('Готовность к публикации подтверждена');}
 function qeOpenExportPreview(){uiOpenPreview('current')}
 function qeRenderIssues(a,readOnly=false){
@@ -1039,31 +1047,34 @@ function qeRenderIssues(a,readOnly=false){
  return `<div class="qe-heading"><h3>Что нужно исправить</h3><button class="btn small" aria-pressed="${qeImportant}" onclick="qeToggleImportant()">${qeImportant?'Показать все замечания':'Только важное'}</button></div>`+(issues.length?issues.map((x,i)=>`<div class="qe-issue ${x.severity==='warning'?'warning':''}"><div class="qe-method">${esc(x.method)} · критерий ${x.criterion} · ${x.severity==='blocker'?'важное замечание':'требует внимания'}</div><h4>${esc(x.title)}</h4>${x.quote?`<blockquote>${esc(x.quote)}</blockquote>`:''}<p>${esc(x.why)}</p><p><b>Что сделать:</b> ${esc(x.action)}</p>${x.quote&&!readOnly?`<button class="btn small" onclick="qeShowFragment(${i})">Показать фрагмент</button>`:''}</div>`).join(''):'<p class="muted">Замечаний в этой выборке нет. Для неподтверждённых критериев смотрите необходимые данные и основания в отчёте.</p>');
 }
 function qeRenderCriteria(a,results,readOnly=false){
+ readOnly=readOnly||(typeof qaAutoReview==='function'&&qaAutoReview(a));
  const filtered=results.filter(r=>qeFilter==='all'||(qeFilter==='attention'?['problem','unverified'].includes(r.status):r.status===qeFilter)).sort((a,b)=>qeFilter==='attention'?(a.status==='problem'?0:1)-(b.status==='problem'?0:1):0);
  return `<div class="qe-heading"><h3>23 критерия АЛЬФАПРОМ</h3><span class="qe-note">Нажмите строку, чтобы увидеть основание</span></div><div class="qe-filters">${[['attention','Требуют внимания'],['all','Все · 23'],['problem','Проблемы'],['unverified','Не проверено'],['pass','Пройдено'],['na','Не применимо']].map(([key,label])=>`<button class="btn small" aria-pressed="${qeFilter===key}" onclick="qeSetFilter('${key}')">${label}</button>`).join('')}</div>`+filtered.map(r=>{
   const manual=a.quality?.manual?.[r.id],active=qeCurrent(a),observation=active?a.quality.automatic.observations[r.id]:null;
-  const shortName=r.id===22?'Экспертность, достоверность и доверие':r.name;
-  return `<details class="qe-row" id="qe-criterion-${r.id}"><summary><span class="qe-number">${String(r.id).padStart(2,'0')}</span><span>${esc(shortName)}</span>${qeBadge(r.status,active&&a.quality.review&&r.status==='unverified'?'Нужны данные':null)}</summary><div class="qe-detail"><div class="qe-method">${esc(r.method)}</div><p>${esc(r.reason)}</p>${observation?`<p class="qe-note"><b>Найдено автоматически:</b> ${esc(observation)}</p>`:''}${readOnly?'<p class="qe-note">'+esc(qeGuides[r.id-1])+'</p>':r.id===9?'<button class="btn small" onclick="qeSetTab(\'final\')">К проверке визуалов</button>':active?`<p class="qe-note">${esc(qeGuides[r.id-1])}</p><div class="field"><label for="qe-status-${r.id}">Решение редактора</label><select id="qe-status-${r.id}">${['unverified','pass','problem',...(qeConditional.includes(r.id)?['na']:[])].map(s=>`<option value="${s}" ${s===(manual?.status||r.status)?'selected':''}>${qeLabels[s]}</option>`).join('')}</select></div><div class="field"><label for="qe-reason-${r.id}">Основание решения / проверенные данные</label><textarea id="qe-reason-${r.id}" placeholder="Что проверили, по каким данным и почему такой результат?">${esc(manual?.reason||'')}</textarea></div><button class="btn small" onclick="qeSaveCriterion(${r.id})">Сохранить решение</button>`:'<p class="qe-note">Сначала запустите быструю проверку.</p>'}</div></details>`;
+  const shortName=r.id===22?'Доверие и прозрачность публикации':r.name;
+  return `<details class="qe-row" id="qe-criterion-${r.id}"><summary><span class="qe-number">${String(r.id).padStart(2,'0')}</span><span>${esc(shortName)}</span>${qeBadge(r.status,active&&a.quality.review&&r.status==='unverified'?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Проверить помощнику':'Нужны данные'):null)}</summary><div class="qe-detail"><div class="qe-method">${esc(r.method)}</div><p>${esc(r.reason)}</p>${observation?`<p class="qe-note"><b>Найдено автоматически:</b> ${esc(observation)}</p>`:''}${readOnly?'<p class="qe-note">'+esc(qeGuides[r.id-1])+'</p>':r.id===9?'<button class="btn small" onclick="qeSetTab(\'final\')">К проверке визуалов</button>':active?`<p class="qe-note">${esc(qeGuides[r.id-1])}</p><div class="field"><label for="qe-status-${r.id}">Решение редактора</label><select id="qe-status-${r.id}">${['unverified','pass','problem',...(qeConditional.includes(r.id)?['na']:[])].map(s=>`<option value="${s}" ${s===(manual?.status||r.status)?'selected':''}>${qeLabels[s]}</option>`).join('')}</select></div><div class="field"><label for="qe-reason-${r.id}">Основание решения / проверенные данные</label><textarea id="qe-reason-${r.id}" placeholder="Что проверили, по каким данным и почему такой результат?">${esc(manual?.reason||'')}</textarea></div><button class="btn small" onclick="qeSaveCriterion(${r.id})">Сохранить решение</button>`:'<p class="qe-note">Сначала запустите быструю проверку.</p>'}</div></details>`;
  }).join('')+(!filtered.length?'<p class="muted">Критериев с таким статусом нет.</p>':'');
 }
 function qeRenderFacts(a,readOnly=false){
+ readOnly=readOnly||(typeof qaAutoReview==='function'&&qaAutoReview(a));
  if(!qeCurrent(a))return '<h3>Факты и источники</h3><p class="muted">Появятся после проверки текущей версии.</p>';
  const facts=qeFacts(a),confirmed=facts.filter(f=>f.status==='confirmed').length;
  return `<details id="qeFactList"><summary><b>Факты и источники · ${facts.length}</b> <span class="qe-note">Подтверждено ${confirmed}; требуют внимания ${facts.length-confirmed}</span></summary><p class="qe-note">Для подтверждения нужны первоисточник и пояснение. Проверку выполняет редактор.</p><div id="qeFactRows" data-shown="${Math.min(uiFactPageSize,facts.length)}">${uiFactOrder(facts).slice(0,uiFactPageSize).map(({f,i})=>uiRenderFact(f,i,readOnly)).join('')}</div>${facts.length>uiFactPageSize?'<button id="qeMoreFacts" class="btn" onclick="uiMoreFacts()">Показать ещё 10</button>':''}${!facts.length?'<p class="muted">Автоматический поиск не нашёл утверждений. Это не подтверждает отсутствие ошибок.</p>':''}${readOnly?'':`<details class="ui-details"><summary>Добавить пропущенное утверждение</summary><div class="field"><label for="qe-new-fact">Точная цитата из статьи</label><textarea id="qe-new-fact"></textarea></div><button class="btn" onclick="qeAddFact()">Добавить в проверку</button></details>`}</details>`;
 }
-function uiRenderFact(f,i,readOnly=false){if(readOnly)return `<details class="qe-row"><summary><span class="qe-number">${i+1}</span><span>${esc(f.claim.length>130?f.claim.slice(0,130)+'…':f.claim)}</span>${qeBadge(f.status==='confirmed'?'pass':f.status==='problem'?'problem':'unverified')}</summary><div class="qe-detail"><blockquote>${esc(f.claim)}</blockquote>${qeSafeUrl(f.sourceUrl)?'<p><a href="'+attr(qeSafeUrl(f.sourceUrl))+'" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a></p>':'<p class="qe-note">Источник пока не указан.</p>'}${f.sourceQuote?'<p>'+esc(f.sourceQuote)+'</p>':''}<p class="qe-note">Подтверждения можно сохранить после применения нового варианта.</p></div></details>`;return `<details class="qe-row"><summary><span class="qe-number">${i+1}</span><span>${esc(f.claim.length>130?f.claim.slice(0,130)+'…':f.claim)}</span>${qeBadge(f.status==='confirmed'?'pass':f.status==='problem'?'problem':'unverified')}</summary><div class="qe-detail"><div class="qe-method">${esc(f.origin||'Факт из статьи')}${f.at?' · решение '+qeDate(f.at):''}</div><blockquote>${esc(f.claim)}</blockquote><div class="field"><label for="qe-fact-url-${i}">Первоисточник — URL</label><input id="qe-fact-url-${i}" type="url" placeholder="https://…" value="${attr(f.sourceUrl||'')}"></div>${qeSafeUrl(f.sourceUrl)?`<p><a href="${attr(qeSafeUrl(f.sourceUrl))}" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a></p>`:''}<div class="field"><label for="qe-fact-evidence-${i}">Цитата или пояснение, подтверждающее именно этот факт</label><textarea id="qe-fact-evidence-${i}" placeholder="Что в источнике подтверждает утверждение, при каких условиях и на какую дату?">${esc(f.sourceQuote||'')}</textarea></div><div class="actions"><button class="btn small" onclick="qeSaveFact(${i},'confirmed')">Источник проверен — подтвердить</button><button class="btn small danger" onclick="qeSaveFact(${i},'problem')">Есть ошибка</button><button class="btn small" onclick="qeSaveFact(${i},'unverified')">Сохранить без подтверждения</button></div></div></details>`}
+function uiRenderFact(f,i,readOnly=false){if(readOnly)return `<details class="qe-row"><summary><span class="qe-number">${i+1}</span><span>${esc(f.claim.length>130?f.claim.slice(0,130)+'…':f.claim)}</span>${qeBadge(f.status==='confirmed'?'pass':f.status==='problem'?'problem':'unverified')}</summary><div class="qe-detail"><blockquote>${esc(f.claim)}</blockquote>${qeSafeUrl(f.sourceUrl)?'<p><a href="'+attr(qeSafeUrl(f.sourceUrl))+'" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a></p>':'<p class="qe-note">Источник пока не указан.</p>'}${f.sourceQuote?'<p>'+esc(f.sourceQuote)+'</p>':''}<p class="qe-note">${f.method||f.verification?.verified?'Документ загружен помощником; точная выдержка найдена.':'Помощник найдёт подтверждение или исправит неподтверждённую конкретику.'}</p></div></details>`;return `<details class="qe-row"><summary><span class="qe-number">${i+1}</span><span>${esc(f.claim.length>130?f.claim.slice(0,130)+'…':f.claim)}</span>${qeBadge(f.status==='confirmed'?'pass':f.status==='problem'?'problem':'unverified')}</summary><div class="qe-detail"><div class="qe-method">${esc(f.origin||'Факт из статьи')}${f.at?' · решение '+qeDate(f.at):''}</div><blockquote>${esc(f.claim)}</blockquote><div class="field"><label for="qe-fact-url-${i}">Первоисточник — URL</label><input id="qe-fact-url-${i}" type="url" placeholder="https://…" value="${attr(f.sourceUrl||'')}"></div>${qeSafeUrl(f.sourceUrl)?`<p><a href="${attr(qeSafeUrl(f.sourceUrl))}" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a></p>`:''}<div class="field"><label for="qe-fact-evidence-${i}">Цитата или пояснение, подтверждающее именно этот факт</label><textarea id="qe-fact-evidence-${i}" placeholder="Что в источнике подтверждает утверждение, при каких условиях и на какую дату?">${esc(f.sourceQuote||'')}</textarea></div><div class="actions"><button class="btn small" onclick="qeSaveFact(${i},'confirmed')">Источник проверен — подтвердить</button><button class="btn small danger" onclick="qeSaveFact(${i},'problem')">Есть ошибка</button><button class="btn small" onclick="qeSaveFact(${i},'unverified')">Сохранить без подтверждения</button></div></div></details>`}
 function uiFactOrder(facts){return facts.map((f,i)=>({f,i})).sort((a,b)=>(a.f.status==='confirmed')-(b.f.status==='confirmed'))}
 function uiMoreFacts(){const root=document.getElementById('qeFactRows');if(!root)return;const ctx=uiQualityContext(),facts=uiFactOrder(qeFacts(ctx.article)),start=Number(root.dataset.shown),end=Math.min(start+uiFactPageSize,facts.length);root.insertAdjacentHTML('beforeend',facts.slice(start,end).map(({f,i})=>uiRenderFact(f,i,ctx.draft)).join(''));root.dataset.shown=end;const button=document.getElementById('qeMoreFacts');if(button){button.hidden=end>=facts.length;button.textContent='Показать ещё '+Math.min(uiFactPageSize,facts.length-end)}}
 function qeRenderText(a,readOnly=false){
  const state=qeTextState(a),q=a.quality,active=qeCurrent(a),approved=state.ready&&q?.approvedAt;
  const passed=state.results.filter(r=>r.status==='pass').length,na=state.results.filter(r=>r.status==='na').length;
- const verdict=!String(a.content||'').trim()?'Сначала создайте статью':!q?'Статья готова к проверке':!active?'Обновите проверку':state.bad.length?'Требует доработки':state.unknown.length?'Нужно подтверждение данных':approved?'Текст утверждён':'Можно утвердить текст';
- const intro=!active?'Проверка относится к конкретной версии текста и SEO-задания.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?'Откройте требующие внимания критерии и подтвердите данные по источникам.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.';
- return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ${readOnly?'НОВОГО ВАРИАНТА':'ТЕКУЩЕЙ СТАТЬИ'}</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p>${active&&q?.review?'<p class="qe-note">Оценены все 23 критерия: 22 — текст, 1 — изображения перед публикацией.</p>':''}<div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${passed}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${state.bad.length}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${state.unknown.length}</b>Нужны данные</div><div class="qe-metric"><b>${na}</b>Не применимо</div></div>${qeBadge('stage')} <span class="qe-note">Изображения — перед публикацией</span><div class="qe-next">${readOnly?uiQualityDraftNext():uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
+ const verdict=!String(a.content||'').trim()?'Сначала создайте статью':!q?'Статья готова к проверке':!active?'Обновите проверку':state.bad.length?'Требует доработки':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Остались задачи для помощника':'Нужно подтверждение данных'):typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии пройдены':approved?'Текст утверждён':'Можно утвердить текст';
+ const intro=!active?'Проверка относится к конкретной версии текста и SEO-задания.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Нажмите «Исправить критерии»: помощник найдёт основания или уточнит неподтверждённые утверждения.':'Откройте требующие внимания критерии и подтвердите данные по источникам.'):(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии закрыты. Посмотрите итоговую статью с изображениями.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.');
+ return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ${readOnly?'НОВОГО ВАРИАНТА':'ТЕКУЩЕЙ СТАТЬИ'}</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p>${active&&q?.review?`<p class="qe-note">${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Оценены все 23 критерия по автоматическому стандарту; изображения проверяются по реальным файлам.':'Оценены все 23 критерия: 22 — текст, 1 — изображения перед публикацией.'}</p>`:''}<div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${passed}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${state.bad.length}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${state.unknown.length}</b>${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Проверить помощнику':'Нужны данные'}</div><div class="qe-metric"><b>${na}</b>Не применимо</div></div>${typeof qaAutoReview==='function'&&qaAutoReview(a)?qeBadge(state.results[8].status)+' <span class="qe-note">Изображения входят в автоматическую проверку</span>':qeBadge('stage')+' <span class="qe-note">Изображения — перед публикацией</span>'}<div class="qe-next">${readOnly?uiQualityDraftNext():uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
  <div class="card qe-panel">${qeRenderIssues(a,readOnly)}</div><div class="card qe-panel" id="qeCriteriaList">${qeRenderCriteria(a,state.results,readOnly)}</div><div class="card qe-panel" id="qeFacts">${qeRenderFacts(a,readOnly)}</div></div>
- ${readOnly?uiQualityDraftActions():`<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Проверить 23 критерия заново</button><button class="btn qe-wide-btn" onclick="uiOpenPreview('current')">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Спрос, факты, источники, оригинальность, пересечения с публикациями и доверие требуют подтверждённых данных.</p></aside>`}</div>`;
+ ${readOnly?uiQualityDraftActions():`<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Проверить 23 критерия заново</button><button class="btn qe-wide-btn" onclick="uiOpenPreview('current')">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Приоритет — полезность для читателя Яндекса. Факты и источники подтверждаются документами; недостающие данные помощник ищет самостоятельно.</p></aside>`}</div>`;
 }
 function qeRenderFinal(a){
+ if(typeof qaAutoReview==='function'&&qaAutoReview(a))return qaRenderFinal(a);
  const checks=qeFinalChecks(a),q=a.quality,f=q?.final,active=qeCurrent(a)&&f?.snapshot===qeFinalFingerprint(a),ready=qeFinalReady(a),approved=ready&&f?.approvedAt;
  return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${approved?'pass':''}"><span class="qe-method">ПЕРЕД ПУБЛИКАЦИЕЙ</span><div class="qe-verdict">${approved?'Готовность к публикации подтверждена':'Финальная проверка статьи'}</div><p class="muted">Проверьте текст вместе с реальными изображениями и итоговым HTML.</p>${f&&!active?'<div class="qe-notice">Финальная версия изменилась. Запустите проверку повторно.</div>':''}${checks.map(x=>`<div class="qe-final-item"><div><b>${esc(x.title)}</b><span class="qe-note">${esc(x.reason)}</span></div>${qeBadge(x.ok?'pass':'unverified')}</div>`).join('')}</div>
  <div class="card qe-panel"><h3>Подтверждение редактора</h3><p class="qe-note">Доступно после запуска финальной проверки. Эти действия требуют просмотра человеком.</p>${[['links','Открыл внутренние ссылки: адреса работают и переходы соответствуют тексту.'],['images','Открыл файлы изображений: они загружаются, технически достоверны и стоят в подходящих местах.'],['layout','Просмотрел итоговый HTML: текст, таблицы, изображения и оформление готовы к размещению.']].map(([key,label])=>`<label class="qe-checkline"><input type="checkbox" ${active&&f.confirmations[key]?'checked':''} ${!active?'disabled':''} onchange="qeConfirmFinal('${key}',this.checked)"><span>${label}</span></label>`).join('')}</div>
@@ -1075,7 +1086,7 @@ function renderCriteria(){
  if(ctx.draft)qeTab='text';
  if(!a){root.innerHTML=qeLocalWorkspaceNotice()+'<div class="empty">Выберите или добавьте статью в SEO-плане.</div>';return}
  const q=a.quality,stale=!!q&&!qeCurrent(a),legacy=!ctx.draft&&!q&&((a.criteria||[]).includes('ok')||Object.values(a.scores||{}).some(x=>x>0));
- root.innerHTML=`<div class="qe-heading"><div><h2>Проверка качества статьи</h2><p class="muted qe-mobile-wrap">${esc(a.topic||'Без названия')}</p><div class="qe-note">Версия текста: ${qeFingerprint(a).slice(0,8)} · Последняя проверка: ${qeDate(q?.checkedAt)}</div></div><span class="pill">Стандарт АЛЬФАПРОМ · 23 критерия</span></div>${uiQualityVersions(current,ctx)}<div class="qe-tabs" role="tablist" aria-label="Этап проверки"><button class="btn" role="tab" aria-selected="${qeTab==='text'}" onclick="qeSetTab('text')">Проверка текста</button><button class="btn" role="tab" aria-selected="${qeTab==='final'}" onclick="qeSetTab('final')" ${ctx.draft?'disabled':''}>Перед публикацией</button></div><div id="qeMessage" class="qe-error hidden" role="alert"></div>${legacy?'<div class="qe-notice">Прежние ручные галочки и условные баллы не подтверждают качество. Запустите новую проверку: данные статьи сохранены.</div>':''}${qeTab==='text'?qeRenderText(a,ctx.draft)+(ctx.draft?'':qeRenderRevision(a)):qeRenderFinal(a)}`;
+ root.innerHTML=`<div class="qe-heading"><div><h2>Проверка качества статьи</h2><p class="muted qe-mobile-wrap">${esc(a.topic||'Без названия')}</p><div class="qe-note">Версия текста: ${qeFingerprint(a).slice(0,8)} · Последняя проверка: ${qeDate(q?.checkedAt)}</div></div><span class="pill">Стандарт АЛЬФАПРОМ · 23 критерия</span></div>${uiQualityVersions(current,ctx)}<div class="qe-tabs" role="tablist" aria-label="Этап проверки"><button class="btn" role="tab" aria-selected="${qeTab==='text'}" onclick="qeSetTab('text')">Проверка текста</button><button class="btn" role="tab" aria-selected="${qeTab==='final'}" onclick="qeSetTab('final')" ${ctx.draft?'disabled':''}>Перед публикацией</button></div><div id="qeMessage" class="qe-error hidden" role="alert"></div>${legacy?'<div class="qe-notice">Прежние ручные галочки и условные баллы не подтверждают качество. Запустите новую проверку: данные статьи сохранены.</div>':''}${typeof qaRenderPanel==='function'&&!window.QA_TEST_LEGACY?qaRenderPanel(a):''}${qeTab==='text'?qeRenderText(a,ctx.draft)+(ctx.draft?'':qeRenderRevision(a)):qeRenderFinal(a)}`;
  if(!qeHelperFrame)qeEnsureHelper();qeUpdateHelperUI();if(!ctx.draft&&qeTab==='text'&&qeCandidateCurrent(a))qeRevisionPreview();
 }
 
@@ -1265,7 +1276,7 @@ function uiRenderHelperStatus(){
  summary.textContent='α SEO · '+(qeHelperJob?'Работает':short[qeHelperState]||'Подключение…');root.dataset.state=qeHelperState;
  if(uiHelperRenderedState===qeHelperState)return;uiHelperRenderedState=qeHelperState;
  const problem=['offline','unavailable','outdated'].includes(qeHelperState);
- body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для подключения нужна версия 1.5.2 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
+ body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для нового стандарта нужна версия 1.8.0 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
  if(problem){root.open=true;root.dataset.autoOpen='true'}else if(qeHelperState==='connected'&&root.dataset.autoOpen){root.open=false;delete root.dataset.autoOpen}
 }
 function uiOpenEditor(){show('article');document.querySelector('.tabs button[data-tab="editor"]').click();setEditorMode('text')}
@@ -1284,20 +1295,22 @@ function uiQualityContext(a=get()){
 function uiOpenQuality(mode='auto',all=false){const a=get();uiQualitySelection={articleId:a?.id,draftId:a?.generationDraft?.id||null,mode};qeTab='text';if(all)qeFilter='all';show('quality')}
 function uiQualityVersions(a,ctx){
  const pending=sgValidDraftSafe(a.generationDraft)&&sgDraftReportPending(a,a.generationDraft);
- return `<div class="card qe-panel" id="qeVersionChoice"><div class="qe-heading"><h3>${ctx.draft?'Новый вариант':'Текущая статья'}</h3>${ctx.available?`<div class="actions"><button class="btn ${ctx.draft?'primary':''}" aria-pressed="${ctx.draft}" onclick="uiOpenQuality('draft')">Новый вариант</button><button class="btn ${!ctx.draft?'primary':''}" aria-pressed="${!ctx.draft}" onclick="uiOpenQuality('current')">Текущая статья</button></div>`:''}</div><p class="qe-note">${ctx.draft?'Показан отчёт сгенерированного варианта. Текущая статья ещё не заменена. Примените вариант, чтобы доработать его и сохранять подтверждения источников.':'Этот отчёт относится к статье в редакторе и экспорте.'}</p>${ctx.draft&&ctx.stale?'<p class="qe-notice">Исходная статья изменилась. Этот вариант доступен для просмотра; применение и повторная проверка заблокированы.</p>':''}${pending?'<p class="qe-notice">Для этой статьи сохранён более новый отчёт после генерации. Текст повторно применять не нужно. <button class="btn small" onclick="sgApplyDraftReport()">Обновить отчёт по 23 критериям</button></p>':''}</div>`;
+ return `<div class="card qe-panel" id="qeVersionChoice"><div class="qe-heading"><h3>${ctx.draft?'Новый вариант':'Текущая статья'}</h3>${ctx.available?`<div class="actions"><button class="btn ${ctx.draft?'primary':''}" aria-pressed="${ctx.draft}" onclick="uiOpenQuality('draft')">Новый вариант</button><button class="btn ${!ctx.draft?'primary':''}" aria-pressed="${!ctx.draft}" onclick="uiOpenQuality('current')">Текущая статья</button></div>`:''}</div><p class="qe-note">${ctx.draft?'Показан отчёт сгенерированного варианта. Текущая статья ещё не заменена. Точечные исправления доступны здесь. Применение сделает этот вариант текущей статьёй в редакторе и экспорте.':'Этот отчёт относится к статье в редакторе и экспорте.'}</p>${ctx.draft&&ctx.stale?'<p class="qe-notice">Исходная статья изменилась. Этот вариант доступен для просмотра; применение и повторная проверка заблокированы.</p>':''}${pending?'<p class="qe-notice">Для этой статьи сохранён более новый отчёт после генерации. Текст повторно применять не нужно. <button class="btn small" onclick="sgApplyDraftReport()">Обновить отчёт по 23 критериям</button></p>':''}</div>`;
 }
 function uiQualityDraftNext(){
+ if(typeof qaPrimaryButton==='function'&&!window.QA_TEST_LEGACY)return qaPrimaryButton(uiQualityContext().article);
  const a=get(),ctx=uiQualityContext(a),d=ctx.d;if(!ctx.draft)return '';
  const p=SG_PROFILES[d.profile],blocked=ctx.stale||!!qeHelperJob||d.chars<p.min||d.chars>p.max;
  return qeCurrent(ctx.article)&&ctx.article.quality?.review?`<button class="btn primary" onclick="sgApplyDraft()" ${blocked?'disabled':''}>Сделать текущей статьёй вместе с отчётом</button>`:`<button class="btn primary" onclick="sgReviewDraft()" ${blocked?'disabled':''}>Проверить новый вариант по 23 критериям</button>`;
 }
 function uiQualityDraftActions(){
  const ctx=uiQualityContext(),d=ctx.d,p=SG_PROFILES[d.profile],blocked=ctx.stale||!!qeHelperJob||d.chars<p.min||d.chars>p.max;
- return `<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Новый вариант статьи</h3><button class="btn qe-wide-btn" onclick="uiOpenPreview('draft')">Посмотреть статью с изображениями</button><button class="btn qe-wide-btn" onclick="sgReviewDraft()" ${blocked?'disabled':''}>Проверить 23 критерия заново</button><p class="qe-note">Применение перенесёт этот текст, SEO-поля, изображения и отчёт в текущую статью. Предыдущая версия сохранится. Затем здесь можно исправить замечания через α SEO и подтвердить данные.</p></div></aside>`;
+ return `<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Новый вариант статьи</h3><button class="btn qe-wide-btn" onclick="uiOpenPreview('draft')">Посмотреть статью с изображениями</button><button class="btn qe-wide-btn" onclick="sgReviewDraft()" ${blocked?'disabled':''}>Проверить 23 критерия заново</button><p class="qe-note">Кнопка исправления работает с этим вариантом без замены текущей статьи. После завершения можно применить готовый текст и отчёт; предыдущая версия сохранится.</p></div></aside>`;
 }
 function sgValidDraftSafe(d){return typeof sgValidDraft==='function'&&sgValidDraft(d)}
 function uiRegenerateVisual(slot){sgRegenerateSlot(slot);uiOpenStructure()}
 function uiQualityNext(a,state){
+ if(typeof qaPrimaryButton==='function'&&!window.QA_TEST_LEGACY)return qaPrimaryButton(a);
  const busy=qeHelperJob?'disabled':'';
  if(!String(a.content||'').trim())return '<button class="btn primary" onclick="uiOpenStructure()">Сгенерировать статью</button>';
  if(!qeCurrent(a)||!a.quality?.review)return `<button class="btn primary" onclick="qeStartQualityCycle('audit')" ${busy}>Проверить 23 критерия через α SEO</button>`;
@@ -1315,6 +1328,7 @@ function uiExportNotice(message){const el=document.getElementById('exportStatus'
 
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-<script src="generation.js?v=1.7.2"></script></body>
+<script src="generation.js?v=1.8.0"></script>
+<script src="quality-autofix.js?v=1.8.0"></script></body>
 </html>
 

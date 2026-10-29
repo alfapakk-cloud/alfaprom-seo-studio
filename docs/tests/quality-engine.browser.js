@@ -5,7 +5,7 @@
  const test=async(name,fn)=>{try{await fn();tests.push({name,ok:true})}catch(e){tests.push({name,ok:false,error:e.message})}};
  const realSave=save;save=()=>{};toast=()=>{};qeEnsureHelper=()=>{};const realStartQualityCycle=qeStartQualityCycle;qeStartQualityCycle=()=>{};document.getElementById('view-quality').classList.remove('hidden');
  const fresh=()=>{qeClearHelperJob();qeRevisionCandidate=null;qeHelperFinished=null;qeHelperRecovery=null;db=seed();currentId=db.currentId;const a=get();a.content='<h2>Условия применения</h2><p>Выбор упаковки зависит от свойств продукта и условий хранения. <a href="https://alfaprom.org/catalog/">Оборудование</a></p>';return a};
- const report=a=>({version:1,fingerprint:qeFingerprint(a),criteria:criteria.map((_,i)=>({id:i+1,status:i===8?'unverified':'pass',reason:'Тестовый отчёт: этот пример проверяет работу интерфейса, а не реальную статью.'})),issues:[],facts:[]});
+ const report=a=>({version:QE_VERSION,fingerprint:qeFingerprint(a),criteria:criteria.map((_,i)=>({id:i+1,status:i===8?'unverified':'pass',reason:'Тестовый отчёт: этот пример проверяет работу интерфейса, а не реальную статью.'})),issues:[],facts:[]});
  const rejects=(fn)=>{let failed=false;try{fn()}catch(e){failed=true}assert(failed,'Ожидалось отклонение отчёта')};
  const complete=a=>{a.quality=qeNewCheck(a);criteria.forEach((_,i)=>{if(i!==8)a.quality.manual[i+1]={status:'pass',reason:'Редактор проверил данные, область применения и условия данного утверждения.'}})};
  await test('Старые галочки и баллы не подтверждают 23 критерия',()=>{const a=fresh();a.criteria=Array(23).fill('ok');a.scores={seo:100,orig:100,fact:100};assert(qeResults(a).filter(r=>r.status==='pass').length===0,'Старые значения засчитаны')});

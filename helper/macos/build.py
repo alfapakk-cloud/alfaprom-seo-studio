@@ -8,27 +8,31 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = Path('/private/tmp/alfaprom-macos-build/ALFAPROM Helper.app')
+if APP.exists():
+    shutil.rmtree(APP)
 contents = APP / 'Contents'
 macos = contents / 'MacOS'
 resources = contents / 'Resources'
 macos.mkdir(parents=True, exist_ok=True)
 (resources / 'helper').mkdir(parents=True, exist_ok=True)
-for name in ['alfaprom_helper.py', 'panel.html', 'media.py']:
+for name in ['alfaprom_helper.py', 'panel.html', 'media.py', 'quality_schema.py', 'quality_sources.py']:
     shutil.copy2(ROOT / 'helper' / name, resources / 'helper' / name)
+shutil.copytree(ROOT / 'helper/vendor', resources / 'helper/vendor', dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
 shutil.copytree(ROOT / 'helper/lib', resources / 'helper/lib', dirs_exist_ok=True)
 for library in (resources / 'helper/lib').glob('*.dylib'):
     subprocess.run(['codesign', '--force', '--sign', '-', '--timestamp=none', str(library)], check=True)
-shutil.copy2(ROOT / 'generation.js', resources / 'helper' / 'generation.js')
-# Protocol 9 accepts current and legacy visual counts; sign-in settings stay unchanged.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.7.2', 'generation.js'), encoding='utf-8')
+for name in ['generation.js', 'quality-autofix.js']:
+    shutil.copy2(ROOT / name, resources / 'helper' / name)
+# Protocol 10 adds literal patches, scoped audits and verified public evidence.
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.8.0', 'generation.js').replace('quality-autofix.js?v=1.8.0', 'quality-autofix.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.7.2',
-    'CFBundleVersion': '13',
+    'CFBundleShortVersionString': '1.8.0',
+    'CFBundleVersion': '14',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],
