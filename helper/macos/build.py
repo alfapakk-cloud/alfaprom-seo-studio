@@ -24,15 +24,15 @@ for library in (resources / 'helper/lib').glob('*.dylib'):
 for name in ['generation.js', 'quality-autofix.js']:
     shutil.copy2(ROOT / name, resources / 'helper' / name)
 # Protocol 10 adds literal patches, scoped audits and verified public evidence.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.8.0', 'generation.js').replace('quality-autofix.js?v=1.8.0', 'quality-autofix.js'), encoding='utf-8')
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.8.1', 'generation.js').replace('quality-autofix.js?v=1.8.1', 'quality-autofix.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.8.0',
-    'CFBundleVersion': '14',
+    'CFBundleShortVersionString': '1.8.1',
+    'CFBundleVersion': '15',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

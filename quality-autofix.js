@@ -49,7 +49,7 @@ function qaValidateAudit(data,a,ids,base=null){
  if(!Array.isArray(data.linkChecks)||qaArticleLinks(a).some(url=>!data.linkChecks.some(x=>x.url===url&&typeof x.ok==='boolean')))throw Error('Не получена проверка всех ссылок текущей статьи.');
  review.linkChecks=qaClone(data.linkChecks);review.fingerprint=qeFingerprint(a);return review;
 }
-function qaInstall(a,review){qeInstallReview(a,review,true);a.quality.manual={};a.quality.factDecisions={};const evidence=review.facts.filter(f=>f.verification?.verified);for(const claim of qeFacts(a)){const f=evidence.find(f=>qeNormalize(f.claim).includes(qeNormalize(claim.claim)));if(f)a.quality.factDecisions[qeNormalize(claim.claim)]={status:'confirmed',sourceUrl:f.sourceUrl,sourceQuote:f.sourceQuote,at:f.verification.checkedAt,method:'Автопроверка документа и точной выдержки'}}a.quality.autoReady=null;return a}
+function qaInstall(a,review){qeInstallReview(a,review,true);a.quality.manual={};a.quality.factDecisions={};a.quality.checkedAt=review.automatedAt||new Date().toISOString();const evidence=review.facts.filter(f=>f.verification?.verified);for(const claim of qeFacts(a)){const f=evidence.find(f=>qeNormalize(f.claim).includes(qeNormalize(claim.claim)));if(f)a.quality.factDecisions[qeNormalize(claim.claim)]={status:'confirmed',sourceUrl:f.sourceUrl,sourceQuote:f.sourceQuote,at:f.verification.checkedAt,method:'Автопроверка документа и точной выдержки'}}a.quality.autoReady=null;return a}
 function qaDependencies(ids,before,after,changedChars=0){if(changedChars>Math.max(1500,before.content.length*.15)||before.keyword!==after.keyword)return [...QA_IDS];const result=new Set(ids.flatMap(id=>QA_DEPENDENCIES[id]||[id]));if(JSON.stringify(qeSeo(before))!==JSON.stringify(qeSeo(after)))[1,5,6,11,12,21,23].forEach(id=>result.add(id));if(qeHash(qeAnalyze(before).facts)!==qeHash(qeAnalyze(after).facts))[3,4,22].forEach(id=>result.add(id));return [...result].sort((a,b)=>a-b)}
 function qaApplyPatch(data,a,ids){
  if(!sgExecutionOK(data)||data.version!==QE_VERSION||data.fingerprint!==qeFingerprint(a)||!Array.isArray(data.criteriaIds)||qeHash([...data.criteriaIds].sort((x,y)=>x-y))!==qeHash([...ids].sort((x,y)=>x-y)))throw Error('Правки относятся к другой версии или другому набору критериев.');
@@ -72,7 +72,6 @@ function qaStart(mode='cycle',resume=false){
  if(window.QA_TEST_LEGACY)return;
  const owner=get(),ctx=uiQualityContext(owner);if(!owner||qeHelperJob)return qeError('Дождитесь текущей задачи или остановите её.');
  if(qeHelperProtocol<QA_PROTOCOL)return qeError('Нужен помощник α SEO 1.8.0. После обновления перезапустите его через меню α SEO и обновите страницу. Запрос GPT ещё не отправлен.');
- if(ctx.stale&&ctx.draft)return qeError('Исходная статья изменилась; сохранённый вариант можно посмотреть, но нельзя переписать поверх новой версии.');
  if(!qeText(qeDoc(ctx.article)))return qeError('Сначала создайте статью.');
  const target=ctx.draft?'draft':'current',targetToken=qaTargetToken(owner,target,ctx.draft?ctx.d:null),saved=owner.qualityAutofixCheckpoint;
  const canResume=resume&&saved?.version===QA_STANDARD&&saved.target===target&&saved.targetToken===targetToken;
@@ -123,7 +122,7 @@ function qaSaveTarget(job){
  if(!qaCurrent(job))throw Error('Версия статьи изменилась. Автоматическое применение отменено.');const owner=db.articles.find(a=>a.id===job.articleId),old=qaClone(owner),next=job.article;
  try{
   if(job.target==='draft'){
-   const d=owner.generationDraft;d.autofixPrevious={html:d.html,seo:qaClone(d.seo),quality:qaClone(d.quality||null),visuals:qaClone(d.visuals),savedAt:new Date().toISOString()};d.html=qaRawHtml(next);d.seo=qeSeo(next);d.visuals=next.visuals.map(v=>({...v,id:v.slot||v.id}));d.chars=sgPlainLength(d.html);d.quality=qaClone(next.quality);d.status='ready';d.completedAt=new Date().toISOString();
+   const d=owner.generationDraft;if(job.mode!=='audit'){d.autofixPrevious={html:d.html,seo:qaClone(d.seo),quality:qaClone(d.quality||null),visuals:qaClone(d.visuals),savedAt:new Date().toISOString()};d.html=qaRawHtml(next);d.seo=qeSeo(next);d.visuals=next.visuals.map(v=>({...v,id:v.slot||v.id}));d.chars=sgPlainLength(d.html)}d.quality=qaClone(next.quality);d.status='ready';d.completedAt=new Date().toISOString();
   }else{
    const changed=owner.content!==next.content||qeHash(qeSeo(owner))!==qeHash(qeSeo(next))||qeHash(owner.visuals||[])!==qeHash(next.visuals||[]);
    if(changed)owner.qualityPreviousVersion={content:owner.content,seo:qeSeo(owner),quality:qaClone(owner.quality||null),visuals:qaClone(owner.visuals||[]),contentProfile:owner.contentProfile||null,savedAt:new Date().toISOString()};
@@ -133,7 +132,7 @@ function qaSaveTarget(job){
  }catch(e){Object.keys(owner).forEach(k=>delete owner[k]);Object.assign(owner,old);throw e}
 }
 function qaFinish(job,outcome){
- const current=qaCurrent(job),valid=qeCurrent(job.article)&&qaAutoReview(job.article);if(current){job.article.quality=job.article.quality||qeNewCheck(job.article);job.article.quality.autofix={outcome,rounds:job.rounds,history:qaClone(job.history),completedAt:new Date().toISOString()};if(valid&&outcome!=='paused')qaSaveTarget(job);else qaCheckpoint(job)}
+ const current=qaCurrent(job),valid=qeCurrent(job.article)&&qaAutoReview(job.article);if(current){job.article.quality=job.article.quality||qeNewCheck(job.article);if(job.mode!=='audit')job.article.quality.autofix={outcome,rounds:job.rounds,history:qaClone(job.history),completedAt:new Date().toISOString()};if(valid&&outcome!=='paused')qaSaveTarget(job);else qaCheckpoint(job)}
  qeClearHelperJob();qeHelperFinished=null;renderAll();if(outcome==='ready')toast('Все применимые критерии пройдены. Статья готова к просмотру и скачиванию.');else if(outcome==='reviewed')toast('Отчёт сохранён. Оставшиеся критерии можно исправить одной кнопкой.');else qeError(({paused:'Работа остановлена. Готовые правки сохранены.',limit:'Достигнут лимит проходов. Результат сохранён; оставшиеся задачи показаны.',stalled:'Исправления не дали дальнейшего результата. Посмотрите конкретные оставшиеся задачи.'}[outcome]||'Готовые результаты сохранены.'));
 }
 function qaFail(message){const job=qeHelperJob;if(job?.kind!=='autofix')return;try{if(qaCurrent(job))qaCheckpoint(job)}catch(e){message+=' Не удалось сохранить в браузере; скачайте копию проекта.'}qeClearHelperJob();qeHelperFinished=null;renderAll();qeError(message)}

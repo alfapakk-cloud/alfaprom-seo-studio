@@ -13,9 +13,10 @@ update = (root / 'docs/tests/generation161.browser.js').read_text(encoding='utf-
 formats = (root / 'docs/tests/formats17.browser.js').read_text(encoding='utf-8')
 autofix = (root / 'docs/tests/autofix.browser.js').read_text(encoding='utf-8')
 quality_versions = (root / 'docs/tests/quality_versions.browser.js').read_text(encoding='utf-8')
+compat = (root / 'docs/tests/draft_compat181.browser.js').read_text(encoding='utf-8')
 marker = ' const failed=tests.filter(t=>!t.ok);'
 assert tests.count(marker) == 1
-tests = tests.replace(marker, generation + '\n' + ui + '\n' + update + '\n' + formats + '\n' + quality_versions + '\n' + autofix + '\n' + marker).replace('</script', '<\\/script')
+tests = tests.replace(marker, generation + '\n' + ui + '\n' + update + '\n' + formats + '\n' + quality_versions + '\n' + autofix + '\n' + compat + '\n' + marker).replace('</script', '<\\/script')
 head, tail = source.rsplit('</body>', 1)
 (root / '.quality-tests.html').write_text(head + '<script>' + tests + '</script></body>' + tail, encoding='utf-8')
 print('Open http://127.0.0.1:8765/.quality-tests.html after starting python3 -m http.server 8765')

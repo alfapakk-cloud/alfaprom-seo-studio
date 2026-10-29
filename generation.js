@@ -12,6 +12,9 @@ function sgProfile(a){return SG_PROFILES[a.contentProfile]||null}
 function sgVisualCount(a){const p=sgProfile(a);return p?p.images+1:4}
 function sgSetOption(key,value){const a=get();if(!a||qeHelperJob)return;a.generationOptions={...sgOptions(a),[key]:value};save(true)}
 function sgPlainLength(html){const doc=qeDoc({content:html});doc.querySelectorAll('figure,figcaption,script,style').forEach(n=>n.remove());return [...qeText(doc)].length}
+// Article identity is independent of the audit standard. Recognize preserved v1/v2 fingerprints.
+function sgSourceFingerprint(a){return qeFingerprintForVersion(a,'article-source-v1')}
+function sgDraftSourceCurrent(a,d){return !!(d&&typeof d.sourceFingerprint==='string'&&[sgSourceFingerprint(a),qeFingerprintForVersion(a,1),qeFingerprintForVersion(a,2)].includes(d.sourceFingerprint))}
 function sgValidDraft(d){return !!(d&&SG_PROFILES[d.profile]&&typeof d.html==='string'&&d.seo&&Array.isArray(d.visuals)&&d.visuals.length<=11&&Array.isArray(d.notes)&&typeof d.sourceFingerprint==='string')}
 function sgExecutionOK(data){return data?.execution?.model===SG_MODEL&&data.execution.reasoningEffort===SG_EFFORT&&data.execution.authMode==='chatgpt'}
 function sgBuildBrief(a,options=sgOptions(a)){
@@ -39,7 +42,7 @@ function sgParseGeneration(data,a,options){
   return {id:v.id,n:i,title:v.title.trim(),purpose:v.purpose.trim(),kind:v.kind,type:v.kind==='diagram'?'Техническая иллюстрация':'Редакционное фото / иллюстрация',anchorId:v.anchorId,prompt:v.prompt.trim(),alt:v.alt.trim(),caption:v.caption.trim(),status:'todo'};
  });
  const notes=Array.isArray(data.verificationNotes)?data.verificationNotes.filter(x=>typeof x==='string').map(x=>x.slice(0,3000)).slice(0,50):[];
- return {id:crypto.randomUUID(),sourceFingerprint:qeFingerprint(a),profile:options.profile,autoImages:options.images,autoAudit:options.audit!==false,html,seo,visuals,notes,chars,brief:sgBuildBrief(a,options),model:SG_MODEL,reasoningEffort:SG_EFFORT,status:'text-ready',createdAt:new Date().toISOString()};
+ return {id:crypto.randomUUID(),sourceFingerprint:sgSourceFingerprint(a),profile:options.profile,autoImages:options.images,autoAudit:options.audit!==false,html,seo,visuals,notes,chars,brief:sgBuildBrief(a,options),model:SG_MODEL,reasoningEffort:SG_EFFORT,status:'text-ready',createdAt:new Date().toISOString()};
 }
 function sgAssemble(draft){
  const doc=qeDoc({content:draft.html});for(const v of draft.visuals){if(!v.assetId||!/^images\/[a-f0-9]{32}\.webp$/.test(v.file||''))continue;
@@ -50,16 +53,16 @@ function sgAssemble(draft){
  }return doc.body.innerHTML.trim();
 }
 function sgDraftArticle(a,d){return {...a,...d.seo,content:sgAssemble(d),visuals:d.visuals.map(v=>({...v,id:d.id+'_'+v.id,slot:v.id})),contentProfile:d.profile,generationBrief:d.brief}}
-function sgSourceCurrent(job){const a=db.articles.find(x=>x.id===job.articleId);return !!(a&&qeFingerprint(a)===job.sourceFingerprint)}
+function sgSourceCurrent(job){const a=db.articles.find(x=>x.id===job.articleId);return !!(a&&sgDraftSourceCurrent(a,job))}
 function sgConnectionText(){return location.origin!==QE_HELPER_ORIGIN&&['offline','outdated'].includes(qeHelperState)?'Сайт не соединился с локальным помощником. Откройте студию на этом Mac кнопкой ниже; очередь и статьи перенесутся.':qeHelperStatusText()}
 function sgError(message){const el=document.getElementById('sgMessage');if(el){el.textContent=message;el.hidden=false}else toast(message)}
 function sgStart(resume=false){
  const a=get();if(!a)return;if(qeHelperJob)return sgError('Сначала дождитесь текущей задачи или остановите её.');
  if(location.origin!==QE_HELPER_ORIGIN&&qeHelperState==='offline')return sgError('Для генерации откройте студию с помощником на этом Mac кнопкой ниже. Проект перенесётся в ту же вкладку.');
  if(!String(a.topic||'').trim()||!String(a.keyword||'').trim())return sgError('Заполните тему и основной запрос в SEO-задании.');
- const options=sgOptions(a),d=resume?a.generationDraft:null;if(resume&&(!sgValidDraft(d)||d.sourceFingerprint!==qeFingerprint(a)))return sgError('Текст или SEO-задание изменились. Этот черновик можно скачать, но для безопасного применения нужна новая генерация.');
+ const options=sgOptions(a),d=resume?a.generationDraft:null;if(resume&&(!sgValidDraft(d)||!sgDraftSourceCurrent(a,d)))return sgError('Текст или SEO-задание изменились. Этот черновик можно скачать, но для безопасного применения нужна новая генерация.');
  if(resume&&(d.chars<SG_PROFILES[d.profile].min||d.chars>SG_PROFILES[d.profile].max))return sgError('Сначала исправьте объём статьи новой генерацией.');
- const job={kind:'generation',articleId:a.id,articleTitle:a.topic,sourceFingerprint:qeFingerprint(a),options:resume?{profile:d.profile,images:true,audit:options.audit}:options,draft:d,started:Date.now(),stage:'connecting',percent:0,lengthAttempts:0};
+ const job={kind:'generation',articleId:a.id,articleTitle:a.topic,sourceFingerprint:sgSourceFingerprint(a),options:resume?{profile:d.profile,images:true,audit:options.audit}:options,draft:d,started:Date.now(),stage:'connecting',percent:0,lengthAttempts:0};
  qeHelperJob=job;job.tick=setInterval(()=>sgUpdateUI(),1000);qeHelperFinished=null;
  if(resume){delete d.lastError;d.autoImages=true;d.autoAudit=options.audit;d.status='creating-images';sgPersist(job);sgNextImage(job,true)}else sgOperation(job,'generate',sgBuildBrief(a,options).prompt,true);
 }
@@ -160,7 +163,8 @@ function sgApplyDraftReport(){
 }
 function sgMainAction(a,d,busy=false){
  if(busy)return {label:'Выполняется задача…',action:'void 0'};
- if(!sgValidDraft(d)||d.sourceFingerprint!==qeFingerprint(a))return {label:'Сгенерировать статью с помощью GPT',action:d?'sgRestart()':'sgStart()'};
+ if(sgValidDraft(d)&&!sgDraftSourceCurrent(a,d)&&!window.QA_TEST_LEGACY)return {label:'Посмотреть сохранённую статью',action:'sgPreviewDraft()'};
+ if(!sgValidDraft(d)||!sgDraftSourceCurrent(a,d))return {label:'Сгенерировать статью с помощью GPT',action:d?'sgRestart()':'sgStart()'};
  const p=SG_PROFILES[d.profile],valid=d.chars>=p.min&&d.chars<=p.max;
  if(valid&&d.visuals.some(v=>!v.assetId))return {label:'Продолжить создание изображений',action:'sgStart(true)'};
  return {label:'Посмотреть результат',action:'sgPreviewDraft()'};
@@ -173,7 +177,7 @@ function sgRenderGeneration(){
  if(!qeHelperFrame)qeEnsureHelper();sgLoadAssets(a);
 }
 function sgRenderDraft(a,d){
- const p=SG_PROFILES[d.profile],ready=d.visuals.filter(v=>v.assetId).length,stale=d.sourceFingerprint!==qeFingerprint(a),busy=!!qeHelperJob,applied=sgDraftApplied(a,d),validLength=d.chars>=p.min&&d.chars<=p.max;
+ const p=SG_PROFILES[d.profile],ready=d.visuals.filter(v=>v.assetId).length,stale=!sgDraftSourceCurrent(a,d),busy=!!qeHelperJob,applied=sgDraftApplied(a,d),validLength=d.chars>=p.min&&d.chars<=p.max;
  return `<div class="sg-result"><div class="qe-heading"><h3>Новый вариант${applied?' · уже применён':''}</h3><span class="pill">Изображения: ${ready} из ${d.visuals.length}</span></div>${!SG_CURRENT_PROFILE_KEYS.includes(d.profile)?'<p class="qe-note">Это ранее созданный вариант в прежнем формате. Новые размеры применяются при новой генерации через «Создать заново».</p>':''}<p>${esc(p.label)} статья · <b>${d.chars} знаков</b> · ${esc(!busy&&['checking','creating-images'].includes(d.status)?'Работа прервана — можно продолжить':{ready:'Генерация и проверка завершены','ready-unchecked':'Генерация завершена; проверка 23 критериев не запускалась','ready-without-review':'Текст готов; редакционная оценка требует повторного запуска',paused:'Работа приостановлена','length-mismatch':'Нужно исправить объём',checking:'Редакционная проверка','creating-images':'Создание изображений','text-ready':'Текст готов'}[d.status]||d.status)}</p>${stale?'<p class="qe-notice">Исходная статья изменилась. Этот черновик нельзя применить поверх новой версии; его можно скачать.</p>':''}${d.lastError?'<p class="qe-notice">'+esc(d.lastError)+'</p>':''}<div class="actions"><button class="btn" onclick="sgPreviewDraft()">Посмотреть статью</button><button class="btn primary" onclick="sgApplyDraft()" ${stale||busy||!validLength||applied?'disabled':''}>${applied?'Уже применён':'Применить новый вариант'+(d.quality?.review?' и отчёт':'')}</button>${sgDraftReportPending(a,d)?'<button class="btn primary" onclick="sgApplyDraftReport()">Обновить проверку текущей статьи</button>':''}<button class="btn" onclick="sgDownloadDraft()">Скачать HTML</button>${ready?'<button class="btn" onclick="sgDownloadPackage(true)">Скачать статью с изображениями</button>':''}</div><p class="qe-note">«Применить новый вариант» сделает этот черновик текущей статьёй: обновятся текст, SEO-поля и изображения в редакторе, проверке качества и экспорте. Предыдущая версия сохранится для возврата. Публикация на сайте выполняется отдельно.</p>${d.notes.length?'<details><summary>Замечания и данные для проверки ('+d.notes.length+')</summary>'+d.notes.map(n=>'<p>'+esc(n)+'</p>').join('')+'</details>':''}${sgQualitySummary(a,d)}<div class="sg-thumbs">${d.visuals.map(v=>`<div><img data-sg-asset="${attr(v.assetId||'')}" ${sgAssetUrl(v.assetId)?'src="'+attr(sgAssetUrl(v.assetId))+'"':'hidden'} alt="${attr(v.alt)}"><b>${v.kind==='cover'?'Обложка':v.id} · ${esc(v.title)}</b>${v.assetId?`<button class="btn small" onclick="sgRegenerateSlot('${v.id}')" ${stale||busy?'disabled':''}>Перегенерировать</button>`:''}<span class="qe-note" data-sg-file-status="${attr(v.assetId||'')}">${v.assetId?(sgAssetErrors.get(v.assetId)||'WebP · '+Math.round(v.bytes/1024)+' КБ'):sgAssetErrors.get(v.assetId)?esc(sgAssetErrors.get(v.assetId)):'Ожидает генерации'}</span></div>`).join('')}</div><div id="sgDraftPreview"></div></div>`;
 }
 function sgPreviewDraft(){uiOpenPreview('draft')}
@@ -182,17 +186,17 @@ function sgQualitySummary(a,d){
  return `<div class="qe-notice" id="sgQualitySummary"><b>Проверка качества · ${applied?'текущая статья':'новый вариант'}</b><p>${checked?'Оценены 23 критерия · проблемы: '+state.bad.length+' · нужны данные: '+state.unknown.length:'Проверка по 23 критериям '+(d.quality?.review?'требует обновления.':'пока не выполнена.')}</p><button class="btn" onclick="uiOpenQuality('draft',true)">Открыть 23 критерия в «Проверке качества»</button></div>`;
 }
 function sgApplyDraft(){
- const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(sgDraftApplied(a,d))return toast('Этот вариант уже применён. Предыдущая версия сохранена.');if(d.sourceFingerprint!==qeFingerprint(a))return sgError('Исходная статья изменилась. Применение отменено.');
+ const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(sgDraftApplied(a,d))return toast('Этот вариант уже применён. Предыдущая версия сохранена.');if(!sgDraftSourceCurrent(a,d))return sgError('Исходная статья изменилась. Применение отменено.');
  const p=SG_PROFILES[d.profile];if(d.chars<p.min||d.chars>p.max)return sgError('Сначала исправьте объём выбранного формата.');
  const old=JSON.parse(JSON.stringify(a));try{
   a.qualityPreviousVersion={content:a.content,seo:qeSeo(a),quality:a.quality,visuals:a.visuals,contentProfile:a.contentProfile||null,savedAt:new Date().toISOString()};
   const next=sgDraftArticle(a,d);Object.assign(a,{...d.seo,content:next.content,visuals:next.visuals,contentProfile:d.profile,generationBrief:d.brief,status:'work'});
   a.quality=d.quality?.snapshot===qeFingerprint(a)?JSON.parse(JSON.stringify(d.quality)):qeNewCheck(a);a.quality.approvedAt=null;a.quality.final=null;
-  d.appliedAt=new Date().toISOString();d.sourceFingerprint=qeFingerprint(a);a.generationDraft=d;uiPreviewMode='current';save(true);toast('Статья применена. Предыдущая версия сохранена. Текст и визуалы требуют утверждения.');
+  d.appliedAt=new Date().toISOString();d.sourceFingerprint=sgSourceFingerprint(a);a.generationDraft=d;uiPreviewMode='current';save(true);toast('Статья применена. Предыдущая версия сохранена. Текст и визуалы требуют утверждения.');
  }catch(e){Object.keys(a).forEach(k=>delete a[k]);Object.assign(a,old);sgRenderGeneration();sgError('Не удалось сохранить результат: '+e.message)}
 }
-function sgReviewDraft(){const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(d.sourceFingerprint!==qeFingerprint(a))return sgError('Исходная статья изменилась.');const job={kind:'generation',articleId:a.id,articleTitle:a.topic,sourceFingerprint:qeFingerprint(a),options:{profile:d.profile,images:d.autoImages,audit:true},draft:d,started:Date.now(),stage:'connecting',percent:0,lengthAttempts:0};qeHelperJob=job;job.tick=setInterval(sgUpdateUI,1000);sgAudit(job,true)}
-function sgRegenerateSlot(id){const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(d.sourceFingerprint!==qeFingerprint(a))return sgError('Текст после генерации изменился. Сначала подготовьте новый вариант, чтобы не потерять правки.');const v=d.visuals.find(v=>v.id===id);if(!v)return;for(const k of ['assetId','file','mime','width','height','bytes','createdAt'])delete v[k];v.status='todo';d.quality=null;d.status='paused';d.autoImages=true;save(true);sgStart(true)}
+function sgReviewDraft(){if(typeof qaStart==='function'&&!window.QA_TEST_LEGACY){if(!sgValidDraft(get()?.generationDraft))return;uiOpenQuality('draft');return qaStart('audit')}const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(!sgDraftSourceCurrent(a,d))return sgError('Исходная статья изменилась.');const job={kind:'generation',articleId:a.id,articleTitle:a.topic,sourceFingerprint:sgSourceFingerprint(a),options:{profile:d.profile,images:d.autoImages,audit:true},draft:d,started:Date.now(),stage:'connecting',percent:0,lengthAttempts:0};qeHelperJob=job;job.tick=setInterval(sgUpdateUI,1000);sgAudit(job,true)}
+function sgRegenerateSlot(id){const a=get(),d=a?.generationDraft;if(!sgValidDraft(d)||qeHelperJob)return;if(!sgDraftSourceCurrent(a,d))return sgError('Текст после генерации изменился. Сначала подготовьте новый вариант, чтобы не потерять правки.');const v=d.visuals.find(v=>v.id===id);if(!v)return;for(const k of ['assetId','file','mime','width','height','bytes','createdAt'])delete v[k];v.status='todo';d.quality=null;d.status='paused';d.autoImages=true;save(true);sgStart(true)}
 function sgDownloadDraft(){const d=get()?.generationDraft;if(d)download('article-generated.html',sgDocument(d.seo,sgAssemble(d)),'text/html')}
 function sgDocument(seo,content){return uiPublicationDocument(seo,content)}
 function sgCrc32(bytes){let c=0xffffffff;for(const byte of bytes){c^=byte;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0)}return (c^0xffffffff)>>>0}

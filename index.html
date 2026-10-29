@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Студия АЛЬФАПРОМ · 1.8.0</title>
+<title>SEO-Студия АЛЬФАПРОМ · 1.8.1</title>
 <style>
 :root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 <body>
 <div class="app">
 <aside class="side">
-  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.0</div></div>
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.1</div></div>
   <div class="nav">
     <button class="active" data-view="plan">▣ SEO-план</button>
     <button data-view="article">✎ Статья</button>
@@ -468,8 +468,9 @@ function qeHash(value){
  for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),16777619);g=Math.imul(g,33)^s.charCodeAt(i)}
  return (h>>>0).toString(16).padStart(8,'0')+(g>>>0).toString(16).padStart(8,'0');
 }
-function qeFingerprint(a){
- const input=[QE_VERSION,a.id,...['topic','keyword','keywords','cluster','intent','problem','equipment','links','title','description','h1','outline','content'].map(k=>String(a[k]||'')),a.generationBrief?.research||null,db.blogIndex?.articles||[],db.articles.filter(x=>x.id!==a.id).map(x=>[x.id,x.topic,x.keyword])];if(a.contentProfile)input.push({contentProfile:a.contentProfile});return qeHash(input);
+function qeFingerprint(a){return qeFingerprintForVersion(a,QE_VERSION)}
+function qeFingerprintForVersion(a,version){
+ const input=[version,a.id,...['topic','keyword','keywords','cluster','intent','problem','equipment','links','title','description','h1','outline','content'].map(k=>String(a[k]||'')),a.generationBrief?.research||null,db.blogIndex?.articles||[],db.articles.filter(x=>x.id!==a.id).map(x=>[x.id,x.topic,x.keyword])];if(a.contentProfile)input.push({contentProfile:a.contentProfile});return qeHash(input);
 }
 function qeFinalFingerprint(a){return qeHash([qeFingerprint(a),a.quality?.approvedAt,a.visuals||[]])}
 function qeNormalize(s){return String(s||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('ru')}
@@ -1067,9 +1068,9 @@ function uiMoreFacts(){const root=document.getElementById('qeFactRows');if(!root
 function qeRenderText(a,readOnly=false){
  const state=qeTextState(a),q=a.quality,active=qeCurrent(a),approved=state.ready&&q?.approvedAt;
  const passed=state.results.filter(r=>r.status==='pass').length,na=state.results.filter(r=>r.status==='na').length;
- const verdict=!String(a.content||'').trim()?'Сначала создайте статью':!q?'Статья готова к проверке':!active?'Обновите проверку':state.bad.length?'Требует доработки':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Остались задачи для помощника':'Нужно подтверждение данных'):typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии пройдены':approved?'Текст утверждён':'Можно утвердить текст';
- const intro=!active?'Проверка относится к конкретной версии текста и SEO-задания.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Нажмите «Исправить критерии»: помощник найдёт основания или уточнит неподтверждённые утверждения.':'Откройте требующие внимания критерии и подтвердите данные по источникам.'):(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии закрыты. Посмотрите итоговую статью с изображениями.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.');
- return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ${readOnly?'НОВОГО ВАРИАНТА':'ТЕКУЩЕЙ СТАТЬИ'}</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p>${active&&q?.review?`<p class="qe-note">${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Оценены все 23 критерия по автоматическому стандарту; изображения проверяются по реальным файлам.':'Оценены все 23 критерия: 22 — текст, 1 — изображения перед публикацией.'}</p>`:''}<div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${passed}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${state.bad.length}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${state.unknown.length}</b>${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Проверить помощнику':'Нужны данные'}</div><div class="qe-metric"><b>${na}</b>Не применимо</div></div>${typeof qaAutoReview==='function'&&qaAutoReview(a)?qeBadge(state.results[8].status)+' <span class="qe-note">Изображения входят в автоматическую проверку</span>':qeBadge('stage')+' <span class="qe-note">Изображения — перед публикацией</span>'}<div class="qe-next">${readOnly?uiQualityDraftNext():uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
+ const verdict=!String(a.content||'').trim()?'Сначала создайте статью':!q?'Статья готова к проверке':!active?(q?.version!==QE_VERSION?'Нужна проверка по новому стандарту':'Нужна проверка этой версии'):state.bad.length?'Требует доработки':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Остались задачи для помощника':'Нужно подтверждение данных'):typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии пройдены':approved?'Текст утверждён':'Можно утвердить текст';
+ const intro=!active?'Текст сохранён. Актуального отчёта по 23 критериям пока нет — нажмите кнопку проверки ниже. Статья при этом не переписывается.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Нажмите «Исправить критерии»: помощник найдёт основания или уточнит неподтверждённые утверждения.':'Откройте требующие внимания критерии и подтвердите данные по источникам.'):(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии закрыты. Посмотрите итоговую статью с изображениями.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.');
+ return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ${readOnly?'НОВОГО ВАРИАНТА':'ТЕКУЩЕЙ СТАТЬИ'}</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p>${active&&q?.review?`<p class="qe-note">${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Оценены все 23 критерия по автоматическому стандарту; изображения проверяются по реальным файлам.':'Оценены все 23 критерия: 22 — текст, 1 — изображения перед публикацией.'}</p>`:''}<div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${active?passed:'—'}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${active?state.bad.length:'—'}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${active?state.unknown.length:'—'}</b>${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Проверить помощнику':'Нужны данные'}</div><div class="qe-metric"><b>${active?na:'—'}</b>Не применимо</div></div>${!active?'<span class="qe-note">Это отсутствие актуальной проверки, а не оценка качества статьи.</span>':typeof qaAutoReview==='function'&&qaAutoReview(a)?qeBadge(state.results[8].status)+' <span class="qe-note">Изображения входят в автоматическую проверку</span>':qeBadge('stage')+' <span class="qe-note">Изображения — перед публикацией</span>'}<div class="qe-next">${readOnly?uiQualityDraftNext():uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
  <div class="card qe-panel">${qeRenderIssues(a,readOnly)}</div><div class="card qe-panel" id="qeCriteriaList">${qeRenderCriteria(a,state.results,readOnly)}</div><div class="card qe-panel" id="qeFacts">${qeRenderFacts(a,readOnly)}</div></div>
  ${readOnly?uiQualityDraftActions():`<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Проверить 23 критерия заново</button><button class="btn qe-wide-btn" onclick="uiOpenPreview('current')">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Приоритет — полезность для читателя Яндекса. Факты и источники подтверждаются документами; недостающие данные помощник ищет самостоятельно.</p></aside>`}</div>`;
 }
@@ -1217,9 +1218,9 @@ function approveVisual(i){get().visuals[i].status='approved';save();toast('Ви�
 function deleteVisual(i){get().visuals.splice(i,1);save()}
 function renderPreview(){
  const a=get();if(!a)return;const d=sgValidDraftSafe(a.generationDraft)?a.generationDraft:null,applied=!!d&&sgDraftApplied(a,d);
- const draft=!!d&&(uiPreviewMode==='draft'||uiPreviewMode==='auto'&&!applied&&d.sourceFingerprint===qeFingerprint(a));
+ const draft=!!d&&(uiPreviewMode==='draft'||uiPreviewMode==='auto'&&!applied&&sgDraftSourceCurrent(a,d));
  const version=draft?d.id.slice(0,8):qeFingerprint(a).slice(0,8),seo=draft?d.seo:{...qeSeo(a),h1:a.h1||a.topic},content=draft?sgAssemble(d):a.content||'',visuals=draft?d.visuals:a.visuals||[];
- const stale=draft&&d.sourceFingerprint!==qeFingerprint(a),valid=draft&&d.chars>=SG_PROFILES[d.profile].min&&d.chars<=SG_PROFILES[d.profile].max;
+ const stale=draft&&!sgDraftSourceCurrent(a,d),valid=draft&&d.chars>=SG_PROFILES[d.profile].min&&d.chars<=SG_PROFILES[d.profile].max;
  const target=document.getElementById('preview');target.innerHTML=`<div class="card preview-controls"><h2>${draft?'Новый вариант':'Текущая статья'}</h2><p class="muted">${esc(a.topic)} · Версия ${version}</p><div class="actions"><button class="btn ${!draft?'primary':''}" onclick="uiPreviewMode='current';renderPreview()">Текущая статья</button>${d?`<button class="btn ${draft?'primary':''}" onclick="uiPreviewMode='draft';renderPreview()">Новый вариант${applied?' · применён':''}</button>`:''}${draft?`<button class="btn primary" onclick="sgApplyDraft()" ${stale||applied||qeHelperJob||!valid?'disabled':''}>${applied?'Уже применён':'Применить новый вариант'}</button>`:''}<button class="btn" onclick="uiOpenEditor()">Редактировать текущую статью</button></div><p class="small muted">${draft?(applied?'Этот вариант уже используется в редакторе, проверке качества и экспорте.':'Это сохранённый черновик. «Применить новый вариант» обновит текущий текст, SEO-поля и изображения в редакторе, проверке качества и экспорте. Предыдущая версия сохранится. Публикация на сайте выполняется отдельно.'):'Эта версия используется в редакторе, проверке качества и экспорте.'}</p>${stale?'<p class="qe-notice">Текущая статья изменилась после генерации. Применение этого черновика недоступно.</p>':''}<p id="uiPreviewMediaStatus" class="small muted" role="status"></p><button class="btn small" id="uiPreviewMediaRetry" hidden onclick="uiRetryPreviewMedia()">Повторить загрузку изображений</button></div><iframe id="uiPublicationPreview" class="publication-preview" title="${draft?'Новый вариант':'Текущая статья'} — итоговый HTML" sandbox=""></iframe>`;
  const frame=document.getElementById('uiPublicationPreview');uiPreviewDocument={frame,seo,content,visuals,waiting:false};uiWritePreviewDocument(uiPreviewDocument);
  if(typeof sgLoadAssets==='function')sgLoadAssets(a);uiRefreshPreviewMedia();
@@ -1286,7 +1287,7 @@ function uiQualityContext(a=get()){
  if(!a)return {article:null,draft:false};
  const d=sgValidDraftSafe(a.generationDraft)?a.generationDraft:null,key=d?.id||null;
  if(uiQualitySelection.articleId!==a.id||uiQualitySelection.draftId!==key)uiQualitySelection={articleId:a.id,draftId:key,mode:'auto'};
- const applied=d&&sgDraftApplied(a,d),available=!!d&&!applied,stale=!!d&&d.sourceFingerprint!==qeFingerprint(a);
+ const applied=d&&sgDraftApplied(a,d),available=!!d&&!applied,stale=!!d&&!sgDraftSourceCurrent(a,d);
  const draft=available&&(uiQualitySelection.mode==='draft'||uiQualitySelection.mode==='auto'&&!stale);
  if(!draft)return {article:a,draft:false,available,stale,d};
  const article=sgDraftArticle(a,d);article.quality=d.quality||null;
@@ -1295,7 +1296,7 @@ function uiQualityContext(a=get()){
 function uiOpenQuality(mode='auto',all=false){const a=get();uiQualitySelection={articleId:a?.id,draftId:a?.generationDraft?.id||null,mode};qeTab='text';if(all)qeFilter='all';show('quality')}
 function uiQualityVersions(a,ctx){
  const pending=sgValidDraftSafe(a.generationDraft)&&sgDraftReportPending(a,a.generationDraft);
- return `<div class="card qe-panel" id="qeVersionChoice"><div class="qe-heading"><h3>${ctx.draft?'Новый вариант':'Текущая статья'}</h3>${ctx.available?`<div class="actions"><button class="btn ${ctx.draft?'primary':''}" aria-pressed="${ctx.draft}" onclick="uiOpenQuality('draft')">Новый вариант</button><button class="btn ${!ctx.draft?'primary':''}" aria-pressed="${!ctx.draft}" onclick="uiOpenQuality('current')">Текущая статья</button></div>`:''}</div><p class="qe-note">${ctx.draft?'Показан отчёт сгенерированного варианта. Текущая статья ещё не заменена. Точечные исправления доступны здесь. Применение сделает этот вариант текущей статьёй в редакторе и экспорте.':'Этот отчёт относится к статье в редакторе и экспорте.'}</p>${ctx.draft&&ctx.stale?'<p class="qe-notice">Исходная статья изменилась. Этот вариант доступен для просмотра; применение и повторная проверка заблокированы.</p>':''}${pending?'<p class="qe-notice">Для этой статьи сохранён более новый отчёт после генерации. Текст повторно применять не нужно. <button class="btn small" onclick="sgApplyDraftReport()">Обновить отчёт по 23 критериям</button></p>':''}</div>`;
+ return `<div class="card qe-panel" id="qeVersionChoice"><div class="qe-heading"><h3>${ctx.draft?'Новый вариант':'Текущая статья'}</h3>${ctx.available?`<div class="actions"><button class="btn ${ctx.draft?'primary':''}" aria-pressed="${ctx.draft}" onclick="uiOpenQuality('draft')">Новый вариант</button><button class="btn ${!ctx.draft?'primary':''}" aria-pressed="${!ctx.draft}" onclick="uiOpenQuality('current')">Текущая статья</button></div>`:''}</div><p class="qe-note">${ctx.draft?'Показан отчёт сгенерированного варианта. Текущая статья ещё не заменена. Точечные исправления доступны здесь. Применение сделает этот вариант текущей статьёй в редакторе и экспорте.':'Этот отчёт относится к статье в редакторе и экспорте.'}</p>${ctx.draft&&ctx.stale?'<p class="qe-notice">Данные исходной статьи изменились. Сохранённый вариант можно проверить отдельно. Замена текущей статьи заблокирована, чтобы сохранить её правки.</p>':''}${pending?'<p class="qe-notice">Для этой статьи сохранён более новый отчёт после генерации. Текст повторно применять не нужно. <button class="btn small" onclick="sgApplyDraftReport()">Обновить отчёт по 23 критериям</button></p>':''}</div>`;
 }
 function uiQualityDraftNext(){
  if(typeof qaPrimaryButton==='function'&&!window.QA_TEST_LEGACY)return qaPrimaryButton(uiQualityContext().article);
@@ -1304,7 +1305,7 @@ function uiQualityDraftNext(){
  return qeCurrent(ctx.article)&&ctx.article.quality?.review?`<button class="btn primary" onclick="sgApplyDraft()" ${blocked?'disabled':''}>Сделать текущей статьёй вместе с отчётом</button>`:`<button class="btn primary" onclick="sgReviewDraft()" ${blocked?'disabled':''}>Проверить новый вариант по 23 критериям</button>`;
 }
 function uiQualityDraftActions(){
- const ctx=uiQualityContext(),d=ctx.d,p=SG_PROFILES[d.profile],blocked=ctx.stale||!!qeHelperJob||d.chars<p.min||d.chars>p.max;
+ const ctx=uiQualityContext(),d=ctx.d,p=SG_PROFILES[d.profile],blocked=!!qeHelperJob||(window.QA_TEST_LEGACY&&(ctx.stale||d.chars<p.min||d.chars>p.max));
  return `<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Новый вариант статьи</h3><button class="btn qe-wide-btn" onclick="uiOpenPreview('draft')">Посмотреть статью с изображениями</button><button class="btn qe-wide-btn" onclick="sgReviewDraft()" ${blocked?'disabled':''}>Проверить 23 критерия заново</button><p class="qe-note">Кнопка исправления работает с этим вариантом без замены текущей статьи. После завершения можно применить готовый текст и отчёт; предыдущая версия сохранится.</p></div></aside>`;
 }
 function sgValidDraftSafe(d){return typeof sgValidDraft==='function'&&sgValidDraft(d)}
@@ -1328,7 +1329,7 @@ function uiExportNotice(message){const el=document.getElementById('exportStatus'
 
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-<script src="generation.js?v=1.8.0"></script>
-<script src="quality-autofix.js?v=1.8.0"></script></body>
+<script src="generation.js?v=1.8.1"></script>
+<script src="quality-autofix.js?v=1.8.1"></script></body>
 </html>
 
