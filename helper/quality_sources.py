@@ -13,12 +13,56 @@ import ssl
 import subprocess
 import sys
 import time
+import queue
+import threading
 import zlib
 from urllib.parse import urljoin, urlsplit, unquote
 
 CACHE_ROOT = Path.home() / 'Library/Application Support/ALFAPROM SEO Studio/source-cache'
 MAX_DOWNLOAD = 10_000_000
 FACTORY_DOMAINS = ('henkelman.com', 'hualianmachinery.com', 'hualian.biz')
+NETWORK_SLOTS = threading.BoundedSemaphore(3)
+LINK_CACHE = {}
+LINK_CACHE_LOCK = threading.Lock()
+
+
+def bounded_results(function, urls, budget):
+    """Return partial real results by a wall deadline; unfinished work never becomes success."""
+    pending, output, stop = queue.Queue(), queue.Queue(), threading.Event()
+    deadline = time.monotonic() + budget
+    for url in urls:
+        pending.put(url)
+    def worker():
+        while not stop.is_set():
+            try:
+                url = pending.get_nowait()
+            except queue.Empty:
+                return
+            if not NETWORK_SLOTS.acquire(timeout=max(0, deadline - time.monotonic())):
+                return
+            try:
+                if stop.is_set():
+                    return
+                result = function(url)
+                output.put((url, result))
+            finally:
+                NETWORK_SLOTS.release()
+    for _ in range(min(3, len(urls))):
+        threading.Thread(target=worker, daemon=True).start()
+    results = {}
+    try:
+        while len(results) < len(urls):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            try:
+                url, value = output.get(timeout=remaining)
+                results[url] = value
+            except queue.Empty:
+                break
+    finally:
+        stop.set()
+    return results
 
 
 def normalized(text):
@@ -236,12 +280,14 @@ def verify_sources(data):
 
     def retrieve(url):
         try:
-            return url, fetch_with_retry(url)
+            return fetch_with_retry(url)
         except Exception as exc:
-            return url, {'error': str(exc)[:300]}
+            return {'error': str(exc)[:300]}
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        documents = dict(pool.map(retrieve, urls))
+    documents = bounded_results(retrieve, urls, 75)
+    completed_documents = len(documents)
+    for url in urls:
+        documents.setdefault(url, {'error': 'Документ не удалось проверить за отведённое время. Подтверждение не получено.'})
     verified = []
     for source in sources[:12]:
         doc = documents.get(source.get('url'), {})
@@ -260,7 +306,7 @@ def verify_sources(data):
         ok = fact.get('sourceUrl') in verified and not doc.get('error') and 30 <= len(quote) <= 6000 and normalized(quote) in normalized(doc.get('text', ''))
         fact['verification'] = {'verified': bool(ok), 'checkedAt': doc.get('checkedAt'), 'sha256': doc.get('sha256'),
                                 'reason': doc.get('error', '' if ok else 'Точная выдержка не найдена в документе.')}
-    data['sourceChecks'] = {'version': 1, 'verifiedUrls': list(dict.fromkeys(verified)), 'checkedUrls': len(documents)}
+    data['sourceChecks'] = {'version': 1, 'verifiedUrls': list(dict.fromkeys(verified)), 'checkedUrls': completed_documents}
     # A positive fact verdict needs both the independent relevance judgement and real evidence.
     unsupported = [f for f in facts if not f['verification']['verified']]
     for criterion in data.get('criteria', []):
@@ -280,10 +326,19 @@ def fetch_with_retry(url):
                 raise
 
 
-def verify_links(urls):
+def verify_links(urls, use_cache=False):
     if not isinstance(urls, list) or len(urls) > 40 or any(not isinstance(u, str) for u in urls):
         raise ValueError('Некорректный список ссылок статьи.')
+    if not use_cache:
+        with LINK_CACHE_LOCK:
+            for url in urls:
+                LINK_CACHE.pop(url, None)
     def check(url):
+        if use_cache:
+            with LINK_CACHE_LOCK:
+                cached = LINK_CACHE.get(url)
+                if cached and time.monotonic() < cached['expires']:
+                    return dict(cached['result'])
         try:
             doc = fetch_with_retry(url)
             if public_source_link(url) and not doc.get('publicAllowed'):
@@ -292,8 +347,15 @@ def verify_links(urls):
             final_host = (urlsplit(doc.get('finalUrl', url)).hostname or '').lower().removeprefix('www.')
             if original_host == 'alfaprom.org' and final_host != original_host:
                 raise ValueError('Внутренняя ссылка перенаправляет на другой сайт.')
-            return {'url': url, 'ok': True, 'checkedAt': doc['checkedAt'], 'finalUrl': doc.get('finalUrl', url)}
+            result = {'url': url, 'ok': True, 'checkedAt': doc['checkedAt'], 'finalUrl': doc.get('finalUrl', url)}
         except Exception as exc:
-            return {'url': url, 'ok': False, 'kind': 'unavailable' if isinstance(exc, (OSError, http.client.HTTPException)) else 'invalid', 'reason': str(exc)[:300]}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        return list(pool.map(check, list(dict.fromkeys(urls))))
+            result = {'url': url, 'ok': False, 'kind': 'unavailable' if isinstance(exc, (OSError, http.client.HTTPException)) else 'invalid', 'reason': str(exc)[:300]}
+        if use_cache:
+            with LINK_CACHE_LOCK:
+                if len(LINK_CACHE) >= 256:
+                    LINK_CACHE.pop(next(iter(LINK_CACHE)))
+                LINK_CACHE[url] = {'expires': time.monotonic() + (600 if result['ok'] else 120), 'result': dict(result)}
+        return result
+    unique = list(dict.fromkeys(urls))
+    results = bounded_results(check, unique, 45)
+    return [results.get(url, {'url': url, 'ok': False, 'kind': 'unavailable', 'reason': 'Не удалось проверить ссылку за отведённое время. Повторная проверка доступна отдельно.'}) for url in unique]

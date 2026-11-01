@@ -26,7 +26,7 @@ class TransportTests(unittest.TestCase):
         conn.request('POST' if body is not None else 'GET',path,json.dumps(body) if body is not None else None,h)
         response=conn.getresponse();data=response.read();status=response.status;conn.close();return status,data
     def test_health_and_script(self):
-        status,data=self.request('/health');self.assertEqual(status,200);self.assertEqual(json.loads(data)['version'],10)
+        status,data=self.request('/health');self.assertEqual(status,200);self.assertEqual(json.loads(data)['version'],11)
         status,data=self.request('/quality-autofix.js?v=1.8.0');self.assertEqual(status,200);self.assertIn(b'QA_STANDARD=2',data)
     def test_patch_dispatches_exact_operation(self):
         with patch.object(helper,'execute_task',return_value={'version':2,'replacements':[]}) as execute:

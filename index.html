@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Студия АЛЬФАПРОМ · 1.8.1</title>
+<title>SEO-Студия АЛЬФАПРОМ · 1.8.2</title>
 <style>
 :root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 <body>
 <div class="app">
 <aside class="side">
-  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.1</div></div>
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.2</div></div>
   <div class="nav">
     <button class="active" data-view="plan">▣ SEO-план</button>
     <button data-view="article">✎ Статья</button>
@@ -773,10 +773,10 @@ function qeHelperProgressView(job,now=Date.now()){
 function qeHelperStatusText(){
  if(qeHelperState==='connected')return '● Программа активирована · помощник подключён';
  if(qeHelperState==='launching')return 'Запрос на запуск отправлен. Подтвердите открытие приложения на Mac, если браузер попросит. Подключаемся…';
- if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.8.0 и перезапустите его через меню α SEO.';
+ if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.8.2 и перезапустите его через меню α SEO.';
  if(qeHelperState==='offline')return 'Программа завершила работу или связь потеряна. Запустите помощника и нажмите «Проверить подключение».';
  if(qeHelperState==='checking')return 'Проверяем подключение помощника…';
- if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.8.0. Студия проверит подключение снова автоматически.';
+ if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.8.2. Студия проверит подключение снова автоматически.';
  return 'Запустите помощника один раз. Его статус, ход доработки и результат появятся на этой странице.';
 }
 function qeRenderHelperProgress(){
@@ -829,7 +829,7 @@ function qeHandleHelperMessage(event){
  const data=event.data;
  if(typeof sgHandleAssetMessage==='function'&&sgHandleAssetMessage(data))return;
  if(data.type==='alfaprom.helper.ready'){
-  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=(typeof qaStart==='function'&&!window.QA_TEST_LEGACY?10:6)?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для нового стандарта проверки нужен помощник 1.8.0. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
+  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=(typeof qaStart==='function'&&!window.QA_TEST_LEGACY?11:6)?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для нового стандарта проверки нужен помощник 1.8.2. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
  }
  if(data.type==='alfaprom.helper.offline'){qeHelperState='offline';qeUpdateHelperUI();return}
  const job=qeHelperJob;if(!job||data.jobId!==job.id)return;
@@ -1277,7 +1277,7 @@ function uiRenderHelperStatus(){
  summary.textContent='α SEO · '+(qeHelperJob?'Работает':short[qeHelperState]||'Подключение…');root.dataset.state=qeHelperState;
  if(uiHelperRenderedState===qeHelperState)return;uiHelperRenderedState=qeHelperState;
  const problem=['offline','unavailable','outdated'].includes(qeHelperState);
- body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для нового стандарта нужна версия 1.8.0 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
+ body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для нового стандарта нужна версия 1.8.2 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
  if(problem){root.open=true;root.dataset.autoOpen='true'}else if(qeHelperState==='connected'&&root.dataset.autoOpen){root.open=false;delete root.dataset.autoOpen}
 }
 function uiOpenEditor(){show('article');document.querySelector('.tabs button[data-tab="editor"]').click();setEditorMode('text')}
@@ -1329,7 +1329,7 @@ function uiExportNotice(message){const el=document.getElementById('exportStatus'
 
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-<script src="generation.js?v=1.8.1"></script>
-<script src="quality-autofix.js?v=1.8.1"></script></body>
+<script src="generation.js?v=1.8.2"></script>
+<script src="quality-autofix.js?v=1.8.2"></script></body>
 </html>
 
