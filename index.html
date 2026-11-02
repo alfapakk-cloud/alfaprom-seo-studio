@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Студия АЛЬФАПРОМ · 1.8.5</title>
+<title>SEO-Студия АЛЬФАПРОМ · 1.8.6</title>
 <style>
 :root{--orange:#ff8100;--bg:#f5f6f8;--card:#fff;--text:#1d2329;--muted:#68717c;--line:#dfe3e8;--green:#16834b;--yellow:#a86b00;--red:#c43d3d;--blue:#2c67c9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 <body>
 <div class="app">
 <aside class="side">
-  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.5</div></div>
+  <div class="brand">SEO-СТУДИЯ <span>АЛЬФАПРОМ</span><div class="small" style="color:#888;margin-top:4px">v1.8.6</div></div>
   <div class="nav">
     <button class="active" data-view="plan">▣ SEO-план</button>
     <button data-view="article">✎ Статья</button>
@@ -544,7 +544,7 @@ function qeResults(a){
   if((id===3||id===4)&&status==='pass'&&facts.some(f=>f.status!=='confirmed')){status='unverified';reason='В списке остались неподтверждённые факты. '+reason}
   if((id===3||id===4)&&facts.some(f=>f.status==='problem')){status='problem';reason='В карточках фактов отмечена ошибка. '+reason}
   if(trusted&&id===7&&q.review.linkChecks?.some(x=>!x.ok)){status=q.review.linkChecks.filter(x=>!x.ok).every(x=>x.kind==='unavailable')?'unverified':'problem';reason=(status==='unverified'?'Временный сбой проверки доступности ссылок: ':'Не удалось открыть ссылки: ')+q.review.linkChecks.filter(x=>!x.ok).map(x=>x.url).join(', ');method='Проверка адресов помощником'}
-  return {id,name,status,reason,method};
+  if(trusted&&q.review.scope?.preservedIds?.includes(id))method='Сохранена прежняя оценка · '+qeDate(ai?.checkedAt||q.review.importedAt);return {id,name,status,reason,method};
  });
 }
 function qeTextState(a){
@@ -773,10 +773,10 @@ function qeHelperProgressView(job,now=Date.now()){
 function qeHelperStatusText(){
  if(qeHelperState==='connected')return '● Программа активирована · помощник подключён';
  if(qeHelperState==='launching')return 'Запрос на запуск отправлен. Подтвердите открытие приложения на Mac, если браузер попросит. Подключаемся…';
- if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.8.5 и перезапустите его через меню α SEO.';
+ if(qeHelperState==='outdated')return 'Обновите помощника до версии 1.8.6 и перезапустите его через меню α SEO.';
  if(qeHelperState==='offline')return 'Программа завершила работу или связь потеряна. Запустите помощника и нажмите «Проверить подключение».';
  if(qeHelperState==='checking')return 'Проверяем подключение помощника…';
- if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.8.5. Студия проверит подключение снова автоматически.';
+ if(qeHelperState==='unavailable')return 'Помощник не отвечает. Если приложение уже запущено, остановите и запустите его через меню α SEO. Нужна версия 1.8.6. Студия проверит подключение снова автоматически.';
  return 'Запустите помощника один раз. Его статус, ход доработки и результат появятся на этой странице.';
 }
 function qeRenderHelperProgress(){
@@ -829,7 +829,7 @@ function qeHandleHelperMessage(event){
  const data=event.data;
  if(typeof sgHandleAssetMessage==='function'&&sgHandleAssetMessage(data))return;
  if(data.type==='alfaprom.helper.ready'){
-  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=(typeof qaStart==='function'&&!window.QA_TEST_LEGACY?11:6)?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для нового стандарта проверки нужен помощник 1.8.5. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
+  qeHelperLastSeen=Date.now();qeHelperProtocol=data.version;if(typeof sgHelperReady==='function')sgHelperReady(data.version);if(qeHelperJob)qeHelperJob.disconnected=false;qeHelperState=data.version>=(typeof qaStart==='function'&&!window.QA_TEST_LEGACY?11:6)?'connected':'outdated';if(qeHelperState==='outdated'&&qeHelperJob)return qeFinishHelperError('Для нового стандарта проверки нужен помощник 1.8.6. Обновление уже подготовлено; остановите и запустите помощника через меню α SEO.');if(qeHelperState==='connected')qeHelperLaunchUntil=0;qeSendHelperJob();qeUpdateHelperUI();return;
  }
  if(data.type==='alfaprom.helper.offline'){qeHelperState='offline';qeUpdateHelperUI();return}
  const job=qeHelperJob;if(!job||data.jobId!==job.id)return;
@@ -1069,7 +1069,7 @@ function qeRenderText(a,readOnly=false){
  const state=qeTextState(a),q=a.quality,active=qeCurrent(a),approved=state.ready&&q?.approvedAt;
  const passed=state.results.filter(r=>r.status==='pass').length,na=state.results.filter(r=>r.status==='na').length;
  const verdict=!String(a.content||'').trim()?'Сначала создайте статью':!q?'Статья готова к проверке':!active?(q?.version!==QE_VERSION?'Нужна проверка по новому стандарту':'Нужна проверка этой версии'):q?.review?.provisional?'Исправления ожидают оценки':state.bad.length?'Требует доработки':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Остались задачи для помощника':'Нужно подтверждение данных'):typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии пройдены':approved?'Текст утверждён':'Можно утвердить текст';
- const intro=q?.review?.provisional?'Правки сохранены. Нажмите «Запустить оценку», чтобы проверить их результат.':!active?'Текст сохранён. Актуального отчёта по 23 критериям пока нет — нажмите кнопку проверки ниже. Статья при этом не переписывается.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'«Запустить оценку» проверяет пункты. «Исправить N критериев» вносит правки по выявленным замечаниям. Основания доступны в строках критериев.':'Откройте требующие внимания критерии и подтвердите данные по источникам.'):(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии закрыты. Посмотрите итоговую статью с изображениями.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.');
+ const intro=q?.review?.provisional?'Правки сохранены. Нажмите «Запустить оценку исправленных критериев», чтобы проверить их результат.':!active?'Текст сохранён. Актуального отчёта по 23 критериям пока нет — нажмите кнопку проверки ниже. Статья при этом не переписывается.':state.bad.length?'Замечания показаны ниже. Помощник может исправить их и повторно проверить статью.':state.unknown.length?(typeof qaAutoReview==='function'&&qaAutoReview(a)?'«Запустить оценку всей статьи» оценивает все 23 пункта; «Запустить оценку исправленных критериев» проверяет только внесённые правки. «Исправить N критериев» вносит правки по выявленным замечаниям. Основания доступны в строках критериев.':'Откройте требующие внимания критерии и подтвердите данные по источникам.'):(typeof qaAutoReview==='function'&&qaAutoReview(a)?'Все применимые критерии закрыты. Посмотрите итоговую статью с изображениями.':'Критерии текста закрыты. Следующий этап — изображения и итоговый просмотр.');
  return `<div class="qe-layout"><div class="qe-stack"><div class="card qe-panel qe-outcome ${state.bad.length?'problem':state.ready?'pass':''}" aria-live="polite"><span class="qe-method">ИТОГ ПРОВЕРКИ ${readOnly?'НОВОГО ВАРИАНТА':'ТЕКУЩЕЙ СТАТЬИ'}</span><div class="qe-verdict">${esc(verdict)}</div><p class="muted">${intro}</p>${active&&q?.review?`<p class="qe-note">${q?.review?.provisional?'Внесённые правки ещё не оценены; затронутые пункты ожидают отдельной проверки.':typeof qaAutoReview==='function'&&qaAutoReview(a)?'Оценены все 23 критерия по автоматическому стандарту; изображения проверяются по реальным файлам.':'Оценены все 23 критерия: 22 — текст, 1 — изображения перед публикацией.'}</p>`:''}<div class="qe-metrics"><div class="qe-metric"><b style="color:var(--green)">${active?passed:'—'}</b>Пройдено</div><div class="qe-metric"><b style="color:var(--red)">${active?state.bad.length:'—'}</b>Проблемы</div><div class="qe-metric"><b style="color:var(--yellow)">${active?state.unknown.length:'—'}</b>${typeof qaAutoReview==='function'&&qaAutoReview(a)?'Проверить помощнику':'Нужны данные'}</div><div class="qe-metric"><b>${active?na:'—'}</b>Не применимо</div></div>${!active?'<span class="qe-note">Это отсутствие актуальной проверки, а не оценка качества статьи.</span>':typeof qaAutoReview==='function'&&qaAutoReview(a)?qeBadge(state.results[8].status)+' <span class="qe-note">Изображения входят в автоматическую проверку</span>':qeBadge('stage')+' <span class="qe-note">Изображения — перед публикацией</span>'}<div class="qe-next">${readOnly?uiQualityDraftNext():uiQualityNext(a,state)}</div>${q?.cycle?'<details class="ui-details"><summary>Подробности последней доработки</summary><p>Попыток: '+q.cycle.rounds+'. Закрыты замечания по критериям: '+(q.cycle.resolved?.join(', ')||'пока нет')+'.</p>'+(['limit','stalled'].includes(q.cycle.outcome)?'<p>Автоматический цикл завершён. Посмотрите основания оставшихся замечаний перед следующим запуском.</p>':'')+'</details>':''}</div>
  <div class="card qe-panel" id="qeCriteriaList">${qeRenderCriteria(a,state.results,readOnly)}</div><div class="card qe-panel" id="qeFacts">${qeRenderFacts(a,readOnly)}</div></div>
  ${readOnly?uiQualityDraftActions():`<aside class="qe-stack qe-sticky"><div class="card qe-panel qe-controls"><h3>Дополнительные действия</h3>${window.QA_TEST_LEGACY&&active&&q?.review&&!state.bad.length?`<button class="btn qe-wide-btn" onclick="qeStartPlusRevision()" ${qeHelperJob?'disabled':''}>Доработать статью через α SEO</button>`:''}${window.QA_TEST_LEGACY?`<button class="btn qe-wide-btn" onclick="qeStartQualityCycle('audit')" ${qeHelperJob?'disabled':''}>Запустить оценку</button>`:''}<button class="btn qe-wide-btn" onclick="uiOpenPreview('current')">Посмотреть текущую статью</button><button class="btn qe-wide-btn" onclick="uiOpenEditor()">Редактировать текст</button><details class="ui-details"><summary>Технические инструменты</summary><button class="btn qe-wide-btn" onclick="runQuality()" ${qeHelperJob?'disabled':''}>Быстрая проверка HTML</button><p class="qe-note">Проверяет разметку и SEO-поля, содержание оценивает полная проверка.</p></details></div><p class="qe-note">Приоритет — полезность для читателя Яндекса. Факты и источники подтверждаются документами; недостающие данные помощник ищет самостоятельно.</p></aside>`}</div>`;
@@ -1277,7 +1277,7 @@ function uiRenderHelperStatus(){
  summary.textContent='α SEO · '+(qeHelperJob?'Работает':short[qeHelperState]||'Подключение…');root.dataset.state=qeHelperState;
  if(uiHelperRenderedState===qeHelperState)return;uiHelperRenderedState=qeHelperState;
  const problem=['offline','unavailable','outdated'].includes(qeHelperState);
- body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для нового стандарта нужна версия 1.8.5 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
+ body.innerHTML=(qeHelperState!=='connected'?'<p>'+esc(qeHelperStatusText())+'</p>':'<p>Помощник подключён. Используется вход через ChatGPT; API-ключ не требуется.</p>')+`<div class="actions"><a class="btn" href="alfaprom-seo://start" onclick="qeLaunchHelperFromStudio()">Запустить α SEO</a><button class="btn" onclick="qeConnectHelper()">Проверить подключение</button></div>`+(location.origin!==QE_HELPER_ORIGIN?'<p><button class="btn" onclick="qeOpenLocalStudio()">Открыть студию с помощником на этом Mac</button></p>':'')+'<details class="ui-details"><summary>Установка и помощь</summary><p>Помощник работает в фоне и доступен в меню Mac «α SEO». Для нового стандарта нужна версия 1.8.6 или новее. Настройки входа и подписки здесь не меняются.</p><a href="https://alfapakk-cloud.github.io/alfaprom-seo-studio/alfaprom-mac-helper.zip" download>Скачать помощника для Mac с Apple Silicon</a></details>';
  if(problem){root.open=true;root.dataset.autoOpen='true'}else if(qeHelperState==='connected'&&root.dataset.autoOpen){root.open=false;delete root.dataset.autoOpen}
 }
 function uiOpenEditor(){show('article');document.querySelector('.tabs button[data-tab="editor"]').click();setEditorMode('text')}
@@ -1329,7 +1329,7 @@ function uiExportNotice(message){const el=document.getElementById('exportStatus'
 
 renderAll();if(location.origin===QE_HELPER_ORIGIN&&location.pathname==='/studio')show('quality');
 </script>
-<script src="generation.js?v=1.8.5"></script>
-<script src="quality-autofix.js?v=1.8.5"></script></body>
+<script src="generation.js?v=1.8.6"></script>
+<script src="quality-autofix.js?v=1.8.6"></script></body>
 </html>
 

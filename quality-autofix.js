@@ -16,7 +16,7 @@ function qaAutoReview(a){const r=a?.quality?.review;return !!(r?.standard===QA_S
 function qaAllowedLink(value){try{const u=new URL(value),host=u.hostname.toLowerCase().replace(/^www\./,'');if(u.protocol!=='https:'||u.username||u.password||u.port&&u.port!=='443'||!QA_FACTORIES.includes(host))return false;const path=decodeURIComponent(u.pathname).toLowerCase();return path.length>4&&!/cart|checkout|order|quote|dealers?|contact|login|\/products?\/|\/catalog|\-pd\d/.test(path+'?'+u.search.toLowerCase())&&/\.pdf$|manual|download|support|technical|knowledge|guide|maintenance|faq|vacuum.pack|packaging.*princip/.test(path)}catch(e){return false}}
 function qaExternalLinks(a){return [...qeDoc(a).querySelectorAll('a[href]')].map(n=>({url:n.getAttribute('href'),text:n.textContent})).filter(x=>/^https?:/i.test(x.url)&&!qeInternal(x.url)&&!qaAllowedLink(x.url))}
 function qaSnapshot(a){const fields=['id','topic','keyword','keywords','cluster','intent','problem','equipment','links','title','description','h1','outline','content','visuals','contentProfile','generationBrief','quality'];return qaClone(Object.fromEntries(fields.filter(k=>a[k]!==undefined).map(k=>[k,a[k]])))}
-function qaTargetToken(a,target,d){return qeHash([qeFingerprint(a),target,d?.id||null,target==='draft'?[d.html,d.seo,d.visuals,d.quality]:[a.quality,a.visuals]])}
+function qaTargetToken(a,target,d){return qeHash([qeFingerprint(a),target,target==='draft'?d?.id||null:null,target==='draft'?[d.html,d.seo,d.visuals,d.quality]:[a.quality,a.visuals]])}
 function qaCurrent(job){const a=db.articles.find(x=>x.id===job.articleId);return !!a&&qaTargetToken(a,job.target,job.target==='draft'?a.generationDraft:null)===job.targetToken}
 function qaPending(a){return qeResults(a).filter(x=>['problem','unverified'].includes(x.status)).map(x=>x.id)}
 
@@ -48,7 +48,7 @@ function qaPatchAudit(job,result){
 }
 function qaAuditPlan(job,ids){job.auditPlan=[...new Set(ids)];job.auditDone=[]}
 function qaCycleState(job){return {queue:job.queue?qaClone(job.queue):null,seenStates:[...(job.seenStates||[])],attemptedIds:Object.keys(job.attempts||{}).map(Number),blockedIds:[...(job.blockedIds||[])],lastFingerprint:qeFingerprint(job.article)}}
-function qaVisibleArticle(a){const j=qeHelperJob,ctx=uiQualityContext();if(j?.kind==='autofix'&&j.articleId===a?.id&&j.target===(ctx.draft?'draft':'current')&&j.displayArticle)return j.displayArticle;const owner=get(),c=owner?.qualityAutofixCheckpoint;if(c?.workflow==='separate'&&qaResumeAvailable(owner,ctx.draft?'draft':'current',qaTargetToken(owner,ctx.draft?'draft':'current',ctx.d)))return qaPreparedDisplay(c.article,c.fixAuditScope||c.pendingAuditScope||[]);return a}
+function qaVisibleArticle(a){const j=qeHelperJob,ctx=uiQualityContext();if(j?.kind==='autofix'&&j.articleId===a?.id&&j.target===(ctx.draft?'draft':'current')&&j.displayArticle)return j.displayArticle;const owner=get(),c=owner?.qualityAutofixCheckpoint;if(c?.workflow==='separate'&&qaResumeAvailable(owner,ctx.draft?'draft':'current',qaTargetToken(owner,ctx.draft?'draft':'current',ctx.d)))return qaCheckpointDisplay(c,ctx.article);return a}
 function qaCriterionProgress(a,id){
  const j=qeHelperJob,progress=j?.kind==='autofix'&&j.articleId===a.id?j:null;
  if(progress?.fixScope?.includes(id))return progress.operation==='patch'?'Исправляем сейчас':progress.operation==='focused_audit'?'Проверяем результат исправления':'';
@@ -85,10 +85,11 @@ function qaIssueQuote(text,quote){
  const fold=value=>{let plain='',map=[];for(let i=0;i<value.length;i++){let c=value[i].toLocaleLowerCase('ru');if(/[\u00ad\u200b\ufeff]/.test(c))continue;if(/[«»„“”‟]/.test(c))c='"';if(/[‘’‚‛`´ʼ]/.test(c))c="'";if(/[‐‑‒–—−]/.test(c))c='-';if(/\s/.test(c)){if(!plain||plain.endsWith(' '))continue;c=' '}plain+=c;for(let n=0;n<c.length;n++)map.push(i)}return {plain:plain.trimEnd(),map}};
  const hay=fold(text),needle=fold(quote).plain;if(!needle)return '';const at=hay.plain.indexOf(needle);if(at<0)return null;return text.slice(hay.map[at],hay.map[at+needle.length-1]+1);
 }
-function qaValidateIssues(data,text,ids,review,base){
+function qaValidateIssues(data,text,ids,review,base,lockedIds=null){
  const invalid=new Set((base?.issueValidation?.invalidIds||[]).filter(id=>!ids.includes(id))),warnings=(base?.issueValidation?.warnings||[]).filter(x=>!ids.includes(x.criterion));
  for(const x of data.issues){
   if(!x||!Number.isInteger(x.criterion)||!QA_IDS.includes(x.criterion))throw Error('Отчёт содержит замечание без допустимого номера критерия. Уже готовые правки сохранены.');
+  if(lockedIds&&!ids.includes(x.criterion)){review.scope.ignoredIssueIds=[...new Set([...(review.scope.ignoredIssueIds||[]),x.criterion])];continue}
   let reason='';
   if(!ids.includes(x.criterion))reason='Замечание относится к пункту, который не был запрошен.';
   else if(!['blocker','warning'].includes(x.severity)||['title','why','action'].some(k=>typeof x[k]!=='string'||x[k].trim().length<5||x[k].length>3000)||typeof x.quote!=='string'||x.quote.length>700)reason='Неверный формат замечания.';
@@ -104,7 +105,7 @@ function qaValidateIssues(data,text,ids,review,base){
 }
 function qaQueueReportRepairs(job,review){
  job.auditRepairAttempts=job.auditRepairAttempts||{};
- const ids=(review.issueValidation?.invalidIds||[]).filter(id=>!(job.auditRepairAttempts[id]||0));
+ const ids=(review.issueValidation?.invalidIds||[]).filter(id=>(!job.correctionIds?.length||job.correctionIds.includes(id))&&!(job.auditRepairAttempts[id]||0));
  for(const id of review.issueValidation?.invalidIds||[])job.blockedIds=[...new Set([...(job.blockedIds||[]),id])];
  if(!ids.length)return;
  for(const id of ids)job.auditRepairAttempts[id]=1;
@@ -115,7 +116,7 @@ function qaQueueReportRepairs(job,review){
  job.history.push({step:'report_repair',ids:[...ids],at:new Date().toISOString()});
 }
 
-function qaValidateAudit(data,a,ids,base=null){
+function qaValidateAudit(data,a,ids,base=null,lockedIds=null){
  if(!sgExecutionOK(data)||data.standard!==QA_STANDARD||data.version!==QE_VERSION||data.fingerprint!==qeFingerprint(a)||data.sourceChecks?.version!==1)throw Error('Ответ проверки не подтверждает стандарт, модель или версию статьи.');
  if(!Array.isArray(data.criteria)||data.criteria.length!==ids.length)throw Error('Нужны ровно запрошенные критерии: '+ids.join(', '));
  const seen=new Set(),review={criteria:[],issues:[],facts:[],sources:[],visuals:[],standard:QA_STANDARD,execution:qaClone(data.execution),sourceChecks:qaClone(data.sourceChecks),importedAt:new Date().toISOString(),automatedAt:new Date().toISOString(),acceptedAt:null,scope:{reviewedIds:[...ids],carriedIds:QA_IDS.filter(id=>!ids.includes(id)),baseFingerprint:base?.fingerprint||null}};
@@ -125,7 +126,7 @@ function qaValidateAudit(data,a,ids,base=null){
  review.criteria.sort((x,y)=>x.id-y.id);
  const actualText=qeText(qeDoc(a)),text=qeNormalize(actualText);
  if(!Array.isArray(data.issues)||data.issues.length>200||!Array.isArray(data.facts)||data.facts.length>300||!Array.isArray(data.sources)||data.sources.length>12||!Array.isArray(data.visuals)||data.visuals.length>11)throw Error('Неверный состав адресного отчёта.');
- qaValidateIssues(data,actualText,ids,review,base);
+ qaValidateIssues(data,actualText,ids,review,base,lockedIds);
  const oldFacts=base?.facts?.filter(f=>text.includes(qeNormalize(f.claim)))||[];
  for(const f of data.facts){if(typeof f.claim!=='string'||f.claim.length<20||f.claim.length>700||!text.includes(qeNormalize(f.claim))||typeof f.sourceQuote!=='string'||f.sourceQuote.length>6000||typeof f.sourceUrl!=='string'||f.sourceUrl&&!qeSafeUrl(f.sourceUrl))throw Error('Источник или цитата факта не соответствует статье.');review.facts.push({...qaClone(f),origin:f.verification?.verified?'Источник загружен помощником; цитата найдена':'Нужно подтверждение первоисточника'})}
  if(!ids.includes(3)&&!ids.includes(4))for(const f of oldFacts)if(!review.facts.some(x=>qeNormalize(x.claim)===qeNormalize(f.claim)))review.facts.push(qaClone(f));
@@ -156,17 +157,48 @@ function qaApplyPatch(data,a,ids){
  const scope=qaDependencies(ids,a,next,changedChars);if(length?.deviation&&!scope.includes(2))scope.push(2);scope.sort((a,b)=>a-b);return {article:next,touched,changedChars,factsChanged:qeHash(qeAnalyze(a).facts)!==qeHash(qeAnalyze(next).facts),scope,ignoredSeo,length,changes:data.replacements.map(r=>({criteriaIds:r.criteriaIds,reason:String(r.reason||'').slice(0,1000),before:r.before,after:r.after}))};
 }
 // Two explicit actions: assessment and literal corrections. Preparation never audits.
+
+function qaCorrectionScope(c){
+ const ids=value=>Array.isArray(value)?value.filter(id=>Number.isInteger(id)&&QA_IDS.includes(id)):[];
+ if(ids(c.correctionIds).length)return [...new Set(ids(c.correctionIds))];
+ if(ids(c.fixDoneIds).length)return [...new Set(ids(c.fixDoneIds))];
+ const plan=ids(c.fixPlan),history=(c.history||[]).filter(x=>x.step==='patch').flatMap(x=>ids(x.ids));
+ if(history.length)return [...new Set(history.filter(id=>!plan.length||plan.includes(id)))];
+ if(plan.length)return [...new Set(plan)];
+ const initial=ids(c.queue?.initialIds);if(initial.length)return [...new Set(initial)];
+ return [];
+}
+function qaScopeBase(baseline,latest,ids,done){
+ const base=qaClone(baseline),doneSet=new Set(done);
+ base.criteria=base.criteria.map(row=>ids.includes(row.id)&&doneSet.has(row.id)?qaClone(latest?.criteria?.find(x=>x.id===row.id)||row):row);
+ base.issues=[...(base.issues||[]).filter(x=>!doneSet.has(x.criterion)),...(latest?.issues||[]).filter(x=>ids.includes(x.criterion)&&doneSet.has(x.criterion))];
+ if(done.some(id=>[3,4].includes(id)))base.facts=qaClone(latest?.facts||base.facts||[]);
+ if(doneSet.has(9))base.visuals=qaClone(latest?.visuals||base.visuals||[]);
+ base.sources=[...new Map([...(base.sources||[]),...(latest?.sources||[])].map(x=>[x.url,x])).values()];
+ base.linkChecks=qaClone(latest?.linkChecks||base.linkChecks||[]);
+ const invalid=[...(base.issueValidation?.invalidIds||[]).filter(id=>!doneSet.has(id)),...(latest?.issueValidation?.invalidIds||[]).filter(id=>ids.includes(id)&&doneSet.has(id))];
+ base.issueValidation={version:1,invalidIds:[...new Set(invalid)],warnings:[...(base.issueValidation?.warnings||[]).filter(x=>!doneSet.has(x.criterion)),...(latest?.issueValidation?.warnings||[]).filter(x=>ids.includes(x.criterion)&&doneSet.has(x.criterion))]};
+ base.scope={reviewedIds:[...done],carriedIds:QA_IDS.filter(id=>!doneSet.has(id)),correctionIds:[...ids],preservedIds:QA_IDS.filter(id=>!ids.includes(id))};
+ return base;
+}
+
+function qaCheckpointDisplay(c,original){
+ const ids=qaCorrectionScope(c),baseline=c.assessmentBase||original.quality?.review;if(!ids.length||baseline?.criteria?.length!==23)return qaPreparedDisplay(c.article,ids);
+ const fp=qeFingerprint(c.article),done=(c.auditDone||[]).filter(id=>ids.includes(id)&&c.auditFingerprints?.[id]===fp),preview=qaSnapshot(c.article);
+ preview.quality={...qeNewCheck(preview),review:qaScopeBase(baseline,c.auditBase||c.article.quality.review,ids,done),checkedAt:original.quality?.checkedAt,manual:{},factDecisions:qaClone(original.quality?.factDecisions||{})};
+ return qaPreparedDisplay(preview,ids.filter(id=>!done.includes(id)));
+}
 function qaPreparedDisplay(article,ids){
  const a=qaSnapshot(article),previous=a.quality,review=qaClone(previous?.review||null);if(!review)return a;
  a.quality={...qeNewCheck(a),checkedAt:previous?.checkedAt||null,review,manual:{},factDecisions:qaClone(previous?.factDecisions||{})};
  review.provisional=true;review.fingerprint=qeFingerprint(a);review.issues=(review.issues||[]).filter(x=>!ids.includes(x.criterion));
- for(const r of review.criteria)if(ids.includes(r.id)){r.status='unverified';r.reason='Сохранены точечные правки. Для этого пункта требуется новая оценка: нажмите «Запустить оценку». Изменение текста само по себе не означает прохождение критерия.'}
+ for(const r of review.criteria)if(ids.includes(r.id)){r.status='unverified';r.reason='Сохранены точечные правки. Для этого пункта требуется новая оценка: нажмите «Запустить оценку исправленных критериев». Изменение текста само по себе не означает прохождение критерия.'}
  return a;
 }
 function qaBeginFix(job,saved,original){
  job.workflow='separate';job.findings=job.findings||{criteria:qeResults(original),issues:qeIssues(original,false)};
  if(saved&&(saved.phase==='awaiting_assessment'||saved.phase==='audit_pending'||saved.operation==='focused_audit')){
-  job.pendingAuditScope=[...new Set([...(saved.fixAuditScope||[]),...(saved.pendingAuditScope||[]),...(saved.scope||[]),...(saved.auditTodo||[]).flat(),...(saved.deferredAudit||[])])];
+  job.pendingAuditScope=qaCorrectionScope(saved);job.fixDoneIds=[...job.pendingAuditScope];
   job.fixAuditScope=[...job.pendingAuditScope];return qaEndFix(job);
  }
  if(!job.fixPlan.length){const ids=qaQueueOrder(qaPending(job.article).filter(id=>!job.article.quality?.review?.issueValidation?.invalidIds?.includes(id)));job.fixPlan=[...ids.filter(id=>id!==9),...ids.filter(id=>id===9)]}
@@ -180,27 +212,39 @@ function qaFixNext(job,reconnect=false){
  const id=(job.fixPlan||[]).find(id=>!job.fixDoneIds.includes(id)&&!job.blockedIds.includes(id)&&!(job.attempts?.[id]||0));
  if(!id||job.rounds>=QA_MAX_ROUNDS)return qaEndFix(job);
  job.fixScope=[id];job.attempts[id]=1;job.rounds++;job.baseReview=qaClone(job.article.quality.review);
- if(id===9){job.imageAttempt=true;job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),...(QA_DEPENDENCIES[9]||[9])])];job.fixAuditScope=[...job.pendingAuditScope];return qaImages(job,reconnect)}
+ if(id===9){job.imageAttempt=true;job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),9])];job.fixAuditScope=[...job.pendingAuditScope];return qaImages(job,reconnect)}
  job.phase='fix';return qaOperation(job,'patch',[id],reconnect);
 }
 function qaEndFix(job,paused=false){
- job.workflow='separate';job.fixAuditScope=[...new Set([...(job.fixAuditScope||[]),...(job.pendingAuditScope||[]),...(job.deferredAudit||[]),...(job.fixDoneIds||[])])];
+ job.workflow='separate';job.fixAuditScope=[...new Set(job.fixDoneIds||[])];job.correctionIds=[...job.fixAuditScope];job.deferredAudit=[];
  job.pendingAuditScope=[...job.fixAuditScope];job.operation=paused?'patch':'awaiting_assessment';job.phase=paused?'fix':'awaiting_assessment';job.scope=paused?[...(job.fixScope||[])]:[];
  job.displayArticle=qaPreparedDisplay(job.article,job.fixAuditScope);qaCheckpoint(job);qeClearHelperJob();qeHelperFinished=null;renderAll();
- toast(paused?'Правки сохранены. Кнопка «Исправить критерии» продолжит незавершённые пункты.':'Исправления сохранены. Нажмите «Запустить оценку», чтобы проверить результат.');
+ toast(paused?'Правки сохранены. Кнопка «Исправить критерии» продолжит незавершённые пункты.':'Исправления сохранены. Нажмите «Запустить оценку исправленных критериев», чтобы проверить результат.');
 }
-function qaCompleteFixImages(job){job.fixDoneIds=[...new Set([...(job.fixDoneIds||[]),9])];job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),3,4,9,20,23])];job.fixAuditScope=[...job.pendingAuditScope];job.phase='fix';qaCheckpoint(job);return qaFixNext(job)}
-function qaAssessPrepared(job,saved){
- job.workflow='separate';job.applyPrepared=true;
- const ids=[...new Set([...(saved.fixAuditScope||[]),...(saved.pendingAuditScope||[]),...(saved.deferredAudit||[])])];
- const started=saved.operation==='focused_audit'&&saved.auditBase;
- job.auditBase=qaClone(saved.auditBase||saved.baseReview||job.article.quality?.review);
- if(started){job.auditTodo=[...qaAuditGroups(saved.scope),...(saved.auditTodo||[])];if(!job.auditPlan.length)job.auditPlan=[...new Set(job.auditTodo.flat())];return qaContinueAudit(job,true)}
- // A fresh explicit assessment evaluates the prepared changes; no patch is sent.
- return ids.length&&job.auditBase?.criteria?.length===23?qaBeginAudit(job,ids,true):(qaAuditPlan(job,QA_IDS),qaOperation(job,'focused_audit',QA_IDS,true));
+function qaCompleteFixImages(job){job.fixDoneIds=[...new Set([...(job.fixDoneIds||[]),9])];job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),9])];job.fixAuditScope=[...job.pendingAuditScope];job.phase='fix';qaCheckpoint(job);return qaFixNext(job)}
+
+function qaAssessPrepared(job,saved,full=false){
+ job.workflow='separate';job.applyPrepared=!!(saved.fixDoneIds?.length||(saved.history||[]).some(x=>['patch','image'].includes(x.step))||qeFingerprint(job.article)!==qeFingerprint(job.before));
+ if(full){
+  job.correctionIds=[];job.pendingAuditScope=[...QA_IDS];job.auditPlan=[...QA_IDS];job.queue=null;
+  if(saved.assessmentAction==='full'&&saved.operation==='focused_audit'&&saved.auditBase){job.auditBase=qaClone(saved.auditBase);job.auditDone=[...(saved.auditDone||[])];job.auditTodo=[...qaAuditGroups(saved.scope),...(saved.auditTodo||[])];return qaContinueAudit(job,true)}
+  job.auditBase=null;job.auditDone=[];return qaOperation(job,'focused_audit',QA_IDS,true);
+ }
+ const ids=qaCorrectionScope(saved),baseline=saved.assessmentBase||job.before.quality?.review||saved.baseReview;
+ if(!ids.length)throw Error('Не удалось определить исправленные пункты. Полная оценка автоматически не запускается.');
+ if(!baseline?.criteria||baseline.criteria.length!==23)throw Error('Нет исходного отчёта для сохранения остальных оценок. Правки сохранены; полная оценка автоматически не запускается.');
+ job.correctionIds=[...ids];job.assessmentBase=qaClone(baseline);job.fixAuditScope=[...ids];job.pendingAuditScope=[...ids];job.deferredAudit=[];
+ const fp=qeFingerprint(job.article),done=(saved.auditDone||[]).filter(id=>ids.includes(id)&&saved.auditFingerprints?.[id]===fp),remaining=ids.filter(id=>!done.includes(id));
+ job.auditBase=qaScopeBase(baseline,saved.auditBase||job.article.quality.review,ids,done);job.auditBase.fingerprint=fp;
+ job.auditPlan=[...ids];job.auditDone=[...done];job.queue={version:1,ids:[...ids],initialIds:[...ids]};
+ const preview=qaSnapshot(job.article);preview.quality={...qeNewCheck(preview),review:qaClone(job.auditBase),checkedAt:job.before.quality?.checkedAt,manual:{},factDecisions:qaClone(job.before.quality?.factDecisions||{})};job.displayArticle=qaPreparedDisplay(preview,remaining);
+ if(!remaining.length){qaInstall(job.article,job.auditBase);job.operation='after_audit';job.phase='after_audit';job.scope=[];job.pendingAuditScope=[];return qaFinish(job,'reviewed')}
+ const previous=[...(saved.scope||[]),...(saved.auditTodo||[]).flat()].filter(id=>remaining.includes(id)),ordered=[...new Set([...previous,...remaining])];
+ job.auditTodo=qaAuditGroups(ordered);return qaContinueAudit(job,true);
 }
 
 function qaStart(mode='cycle',resume=false){
+ const assessmentAction=mode==='audit'?'full':mode==='recheck'?'corrections':null;if(mode==='recheck')mode='audit';
  if(window.QA_TEST_LEGACY)return;
  const owner=get(),ctx=uiQualityContext(owner);if(!owner||qeHelperJob)return qeError('Дождитесь текущей задачи или остановите её.');
  if(qeHelperProtocol<QA_PROTOCOL)return qeError('Нужен помощник α SEO 1.8.2 или новее. Запрос GPT ещё не отправлен.');
@@ -208,15 +252,17 @@ function qaStart(mode='cycle',resume=false){
  const target=ctx.draft?'draft':'current',targetToken=qaTargetToken(owner,target,ctx.draft?ctx.d:null),saved=owner.qualityAutofixCheckpoint;
  // The normal correction button resumes too. Only an explicit full audit starts afresh.
  const canResume=qaResumeAvailable(owner,target,targetToken),article=qaSnapshot(canResume?saved.article:ctx.article);
- if(mode==='fix'&&!canResume&&(!qeCurrent(article)||!qaAutoReview(article)))return qeError('Сначала нажмите «Запустить оценку». Исправления без готового отчёта не запускаются.');
+ if(assessmentAction==='corrections'&&(!canResume||!qaCorrectionScope(saved).length))return qeError('Сначала внесите исправления. Оценка исправленных критериев не запускает полную проверку статьи.');
+ if(mode==='fix'&&!canResume&&(!qeCurrent(article)||!qaAutoReview(article)))return qeError('Сначала нажмите «Запустить оценку всей статьи». Исправления без готового отчёта не запускаются.');
  const prior=article.quality?.autofix?.progress,carry=prior?.lastFingerprint===qeFingerprint(article)?prior:null;
- const job={kind:'autofix',mode,articleId:owner.id,articleTitle:owner.topic,target,targetId:ctx.draft?ctx.d.id:null,targetToken,article,before:qaSnapshot(ctx.article),rounds:canResume?saved.rounds||0:0,history:canResume?qaClone(saved.history||[]):[],attempts:canResume?qaClone(saved.attempts||{}):{},patchRepairAttempts:canResume?qaClone(saved.patchRepairAttempts||{}):{},patchFeedback:canResume?saved.patchFeedback||null:null,pendingAuditScope:canResume?[...(saved.pendingAuditScope||[])]:[],phase:canResume?saved.phase||null:null,blockedIds:canResume?[...(saved.blockedIds||[])]:[],timeoutRetries:0,stepIndex:canResume?saved.stepIndex||0:0,started:Date.now(),percent:0,stage:'connecting',operation:null,queue:canResume?qaClone(saved.queue||null):null,seenStates:canResume?[...(saved.seenStates||[])]:[...(carry?.seenStates||[])],fixScope:canResume?[...(saved.fixScope||[])]:[],auditPlan:canResume?[...(saved.auditPlan||[])]:[],auditDone:canResume?[...(saved.auditDone||[])]:[],linkAttempt:canResume?!!saved.linkAttempt:false,imageAttempt:canResume?!!saved.imageAttempt:false,imageAttempts:canResume?qaClone(saved.imageAttempts||{}):{},imageSlot:canResume?saved.imageSlot||null:null,displayArticle:canResume?qaClone(saved.displayArticle||ctx.article):qaSnapshot(ctx.article),deferredAudit:canResume?[...(saved.deferredAudit||[])]:[],auditFingerprints:canResume?qaClone(saved.auditFingerprints||{}):{},flushingDependencies:canResume?!!saved.flushingDependencies:false,auditRepairAttempts:canResume?qaClone(saved.auditRepairAttempts||{}):{},workflow:mode==='fix'||mode==='audit'?'separate':saved?.workflow||null,fixPlan:canResume?[...(saved.fixPlan||[])]:[],fixDoneIds:canResume?[...(saved.fixDoneIds||[])]:[],findings:canResume?saved.findings||null:null,fixAuditScope:canResume?[...(saved.fixAuditScope||saved.pendingAuditScope||[])]:[],applyPrepared:canResume?!!saved.applyPrepared:false};
+ const job={kind:'autofix',mode,articleId:owner.id,articleTitle:owner.topic,target,targetId:ctx.draft?ctx.d.id:null,targetToken,article,before:qaSnapshot(ctx.article),rounds:canResume?saved.rounds||0:0,history:canResume?qaClone(saved.history||[]):[],attempts:canResume?qaClone(saved.attempts||{}):{},patchRepairAttempts:canResume?qaClone(saved.patchRepairAttempts||{}):{},patchFeedback:canResume?saved.patchFeedback||null:null,pendingAuditScope:canResume?[...(saved.pendingAuditScope||[])]:[],phase:canResume?saved.phase||null:null,blockedIds:canResume?[...(saved.blockedIds||[])]:[],timeoutRetries:0,stepIndex:canResume?saved.stepIndex||0:0,started:Date.now(),percent:0,stage:'connecting',operation:null,queue:canResume?qaClone(saved.queue||null):null,seenStates:canResume?[...(saved.seenStates||[])]:[...(carry?.seenStates||[])],fixScope:canResume?[...(saved.fixScope||[])]:[],auditPlan:canResume?[...(saved.auditPlan||[])]:[],auditDone:canResume?[...(saved.auditDone||[])]:[],linkAttempt:canResume?!!saved.linkAttempt:false,imageAttempt:canResume?!!saved.imageAttempt:false,imageAttempts:canResume?qaClone(saved.imageAttempts||{}):{},imageSlot:canResume?saved.imageSlot||null:null,displayArticle:canResume?qaClone(saved.displayArticle||ctx.article):qaSnapshot(ctx.article),deferredAudit:canResume?[...(saved.deferredAudit||[])]:[],auditFingerprints:canResume?qaClone(saved.auditFingerprints||{}):{},flushingDependencies:canResume?!!saved.flushingDependencies:false,auditRepairAttempts:canResume?qaClone(saved.auditRepairAttempts||{}):{},assessmentAction,workflow:mode==='fix'||mode==='audit'?'separate':saved?.workflow||null,fixPlan:canResume?[...(saved.fixPlan||[])]:[],fixDoneIds:canResume?[...(saved.fixDoneIds||[])]:[],findings:canResume?saved.findings||null:null,correctionIds:canResume?[...(saved.correctionIds||[])]:[],assessmentBase:canResume?saved.assessmentBase||null:null,fixAuditScope:canResume?[...(saved.fixAuditScope||saved.pendingAuditScope||[])]:[],applyPrepared:canResume?!!saved.applyPrepared:false};
  if(!job.seenStates.includes(qeFingerprint(article)))job.seenStates.push(qeFingerprint(article));
  if(mode==='cycle')qaSyncQueue(job);
  qeHelperJob=job;job.tick=setInterval(qeUpdateHelperUI,1000);qeHelperFinished=null;qeHelperRecovery=null;
  try{
   if(mode==='fix')return qaBeginFix(job,canResume?saved:null,ctx.article);
-  if(mode==='audit'&&canResume)return qaAssessPrepared(job,saved);
+  if(mode==='audit'&&canResume)return qaAssessPrepared(job,saved,assessmentAction==='full');
+
   if(canResume&&saved.phase==='audit_pending'&&saved.pendingAuditScope?.length){job.auditBase=qaClone(saved.auditBase||saved.baseReview||article.quality.review);qaBeginAudit(job,saved.pendingAuditScope,true)}
   else if(canResume&&saved.operation==='patch'&&saved.scope?.length){job.baseReview=qaClone(saved.baseReview||article.quality.review);const ids=saved.scope.filter(id=>qaPending(article).includes(id)).slice(0,QA_PATCH_BATCH);if(ids.length){job.fixScope=[...ids];qaOperation(job,'patch',ids,true)}else qaNext(job,true)}
   else if(canResume&&saved.operation==='focused_audit'&&saved.scope?.length&&saved.auditBase){job.auditBase=qaClone(saved.auditBase);job.auditTodo=[...qaAuditGroups(saved.scope),...(saved.auditTodo||[])];if(!job.auditPlan.length)job.auditPlan=[...new Set(job.auditTodo.flat())];qaContinueAudit(job,true)}
@@ -235,7 +281,7 @@ function qaOperation(job,operation,ids,reconnect=false){
 }
 function qaSendJob(){const j=qeHelperJob;if(j?.kind!=='autofix'||j.sent||qeHelperState!=='connected')return;if(qeHelperProtocol<QA_PROTOCOL)return qaFail('Работает прежний помощник. Перезапустите α SEO после обновления до 1.8.2.');j.sent=true;clearTimeout(j.timer);qeHelperFrame.contentWindow.postMessage({type:'alfaprom.'+j.operation,jobId:j.id,prompt:j.prompt,assetIds:j.operation==='focused_audit'&&j.scope.includes(9)?(j.article.visuals||[]).map(v=>v.assetId).filter(Boolean):[],articleLinks:qaArticleLinks(j.article),criteriaIds:j.scope},QE_HELPER_ORIGIN);qeUpdateHelperUI()}
 function qaArticleLinks(a){return [...new Set([...qeDoc(a).querySelectorAll('a[href]')].map(n=>{try{const u=new URL(n.getAttribute('href'),'https://alfaprom.org');return /^https?:$/.test(u.protocol)?u.href:null}catch(e){return null}}).filter(Boolean))].slice(0,40)}
-function qaCheckpoint(job){if(!qaCurrent(job))throw Error('Статья или её оценки изменились. Правки не применены.');const owner=db.articles.find(a=>a.id===job.articleId);owner.qualityAutofixCheckpoint={version:QA_STANDARD,target:job.target,targetId:job.targetId,targetToken:job.targetToken,article:qaSnapshot(job.article),rounds:job.rounds,history:qaClone(job.history),scope:job.scope,operation:job.operation||null,auditBase:job.auditBase?qaClone(job.auditBase):null,baseReview:job.baseReview?qaClone(job.baseReview):null,auditTodo:qaClone(job.auditTodo||[]),attempts:qaClone(job.attempts||{}),blockedIds:[...(job.blockedIds||[])],stepIndex:job.stepIndex||0,phase:job.phase||null,pendingAuditScope:[...(job.pendingAuditScope||[])],patchRepairAttempts:qaClone(job.patchRepairAttempts||{}),patchFeedback:job.patchFeedback?qaClone(job.patchFeedback):null,queue:job.queue?qaClone(job.queue):null,seenStates:[...(job.seenStates||[])],fixScope:[...(job.fixScope||[])],auditPlan:[...(job.auditPlan||[])],auditDone:[...(job.auditDone||[])],displayArticle:job.displayArticle?qaSnapshot(job.displayArticle):null,linkAttempt:!!job.linkAttempt,imageAttempt:!!job.imageAttempt,imageAttempts:qaClone(job.imageAttempts||{}),imageSlot:job.imageSlot||null,auditRepairAttempts:qaClone(job.auditRepairAttempts||{}),workflow:job.workflow||null,fixPlan:[...(job.fixPlan||[])],fixDoneIds:[...(job.fixDoneIds||[])],findings:job.findings?qaClone(job.findings):null,fixAuditScope:[...(job.fixAuditScope||job.pendingAuditScope||[])],applyPrepared:!!job.applyPrepared,deferredAudit:[...(job.deferredAudit||[])],auditFingerprints:qaClone(job.auditFingerprints||{}),flushingDependencies:!!job.flushingDependencies,updatedAt:new Date().toISOString()};save(true)}
+function qaCheckpoint(job){if(!qaCurrent(job))throw Error('Статья или её оценки изменились. Правки не применены.');const owner=db.articles.find(a=>a.id===job.articleId);owner.qualityAutofixCheckpoint={version:QA_STANDARD,target:job.target,targetId:job.targetId,targetToken:job.targetToken,article:qaSnapshot(job.article),rounds:job.rounds,history:qaClone(job.history),scope:job.scope,operation:job.operation||null,auditBase:job.auditBase?qaClone(job.auditBase):null,baseReview:job.baseReview?qaClone(job.baseReview):null,auditTodo:qaClone(job.auditTodo||[]),attempts:qaClone(job.attempts||{}),blockedIds:[...(job.blockedIds||[])],stepIndex:job.stepIndex||0,phase:job.phase||null,pendingAuditScope:[...(job.pendingAuditScope||[])],patchRepairAttempts:qaClone(job.patchRepairAttempts||{}),patchFeedback:job.patchFeedback?qaClone(job.patchFeedback):null,queue:job.queue?qaClone(job.queue):null,seenStates:[...(job.seenStates||[])],fixScope:[...(job.fixScope||[])],auditPlan:[...(job.auditPlan||[])],auditDone:[...(job.auditDone||[])],displayArticle:job.displayArticle?qaSnapshot(job.displayArticle):null,linkAttempt:!!job.linkAttempt,imageAttempt:!!job.imageAttempt,imageAttempts:qaClone(job.imageAttempts||{}),imageSlot:job.imageSlot||null,auditRepairAttempts:qaClone(job.auditRepairAttempts||{}),workflow:job.workflow||null,assessmentAction:job.assessmentAction||null,fixPlan:[...(job.fixPlan||[])],fixDoneIds:[...(job.fixDoneIds||[])],findings:job.findings?qaClone(job.findings):null,fixAuditScope:[...(job.fixAuditScope||job.pendingAuditScope||[])],correctionIds:[...(job.correctionIds||[])],assessmentBase:job.assessmentBase?qaClone(job.assessmentBase):null,applyPrepared:!!job.applyPrepared,deferredAudit:[...(job.deferredAudit||[])],auditFingerprints:qaClone(job.auditFingerprints||{}),flushingDependencies:!!job.flushingDependencies,updatedAt:new Date().toISOString()};save(true)}
 function qaNetworkLinksOnly(a){const failures=(a.quality?.review?.linkChecks||[]).filter(x=>!x.ok);return !!failures.length&&failures.every(x=>x.kind==='unavailable')&&!a.quality.automatic.issues.some(x=>x.criterion===7&&x.severity==='blocker')&&!a.quality.review.issues.some(x=>x.criterion===7)}
 function qaNext(job,reconnect=false){
  if(job.mode==='fix')return qaFixNext(job,reconnect);
@@ -260,15 +306,16 @@ async function qaHandleMessage(job,data){
  try{
   if(job.operation==='linkcheck'){const checks=data.result?.linkChecks;if(!Array.isArray(checks)||qaArticleLinks(job.article).some(url=>!checks.some(x=>x.url===url&&typeof x.ok==='boolean')))throw Error('Нет результатов проверки ссылок.');job.article.quality.review.linkChecks=qaClone(checks);job.phase='after_audit';job.operation='after_audit';job.scope=[];qaAudited(job);job.history.push({step:'links',seconds:Math.max(0,(Date.now()-(job.phaseStarted||Date.now()))/1000),at:new Date().toISOString()});qaCheckpoint(job);return qaNext(job)}
   if(job.operation==='patch'){
-   const result=qaApplyPatch(data.result,job.article,job.scope),old=job.article,nextState=qeFingerprint(result.article),changed=qeFingerprint(old)!==nextState;if(changed&&job.seenStates?.includes(nextState)){job.blockedIds=[...new Set([...(job.blockedIds||[]),...job.scope])];job.history.push({step:'repeat_blocked',ids:[...job.scope],at:new Date().toISOString()});return qaNext(job)}if(changed)job.seenStates=[...(job.seenStates||[]),nextState];job.article=result.article;job.pendingAuditScope=[...result.scope];job.phase='audit_pending';job.patchFeedback=null;job.noChange=old.content===job.article.content&&qeHash(qeSeo(old))===qeHash(qeSeo(job.article));job.history.push({step:'patch',seconds:Math.max(0,(Date.now()-(job.phaseStarted||Date.now()))/1000),round:job.rounds,ids:[...job.scope],changes:result.changes,ignoredSeo:result.ignoredSeo,length:result.length,at:new Date().toISOString()});
-   if(job.mode==='fix'){job.fixDoneIds=[...new Set([...(job.fixDoneIds||[]),...job.scope])];job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),...result.scope])];job.fixAuditScope=[...job.pendingAuditScope];if(Array.isArray(data.result.sources))job.article.quality.review.sources=[...data.result.sources,...(job.article.quality.review.sources||[])].slice(0,30);job.phase='fix';qaCheckpoint(job);return qaFixNext(job)}
+   const result=qaApplyPatch(data.result,job.article,job.scope),old=job.article,nextState=qeFingerprint(result.article),changed=qeFingerprint(old)!==nextState;if(changed&&job.seenStates?.includes(nextState)){job.blockedIds=[...new Set([...(job.blockedIds||[]),...job.scope])];job.history.push({step:'repeat_blocked',ids:[...job.scope],at:new Date().toISOString()});return qaNext(job)}if(changed)job.seenStates=[...(job.seenStates||[]),nextState];job.article=result.article;job.pendingAuditScope=job.mode==='fix'?[...new Set([...(job.fixAuditScope||[]),...job.scope])]:[...result.scope];job.phase='audit_pending';job.patchFeedback=null;job.noChange=old.content===job.article.content&&qeHash(qeSeo(old))===qeHash(qeSeo(job.article));job.history.push({step:'patch',seconds:Math.max(0,(Date.now()-(job.phaseStarted||Date.now()))/1000),round:job.rounds,ids:[...job.scope],changes:result.changes,ignoredSeo:result.ignoredSeo,length:result.length,at:new Date().toISOString()});
+   if(job.mode==='fix'){job.fixDoneIds=[...new Set([...(job.fixDoneIds||[]),...job.scope])];job.pendingAuditScope=[...new Set([...(job.fixAuditScope||[]),...job.scope])];job.fixAuditScope=[...job.pendingAuditScope];if(Array.isArray(data.result.sources))job.article.quality.review.sources=[...data.result.sources,...(job.article.quality.review.sources||[])].slice(0,30);job.phase='fix';qaCheckpoint(job);return qaFixNext(job)}
    if(job.noChange&&!(data.result.sources||[]).length){job.blockedIds=[...new Set([...(job.blockedIds||[]),...job.scope])];job.phase='after_audit';job.operation='after_audit';job.scope=[];job.pendingAuditScope=[];qaAudited(job);qaCheckpoint(job);return qaNext(job)}
    if(Array.isArray(data.result.sources)){job.article.quality.review.sources=[...(data.result.sources||[]),...(job.baseReview.sources||[])].slice(0,30)}
    job.pendingAuditScope=qaPatchAudit(job,result);job.auditBase=job.baseReview;return qaBeginAudit(job,job.pendingAuditScope);
   }
   if(job.operation==='illustrate')return await qaAcceptImage(job,data.result);
-  const base=job.scope.length===23?null:job.auditBase||job.article.quality?.review,review=qaValidateAudit(data.result,job.article,job.scope,base);
-  qaInstall(job.article,review);job.auditBase=qaClone(review);qaQueueReportRepairs(job,review);const validIds=job.scope.filter(id=>!review.issueValidation?.invalidIds?.includes(id));job.auditDone=[...new Set([...(job.auditDone||[]),...validIds])];job.auditFingerprints=job.auditFingerprints||{};for(const id of validIds)job.auditFingerprints[id]=qeFingerprint(job.article);job.deferredAudit=(job.deferredAudit||[]).filter(id=>!job.scope.includes(id));job.history.push({step:'audit',seconds:Math.max(0,(Date.now()-(job.phaseStarted||Date.now()))/1000),round:job.rounds,ids:[...job.scope],remaining:qaPending(job.article),at:new Date().toISOString()});if(job.auditTodo?.length)return qaContinueAudit(job);job.operation='after_audit';job.phase='after_audit';job.scope=[];job.pendingAuditScope=[];qaAudited(job);qaCheckpoint(job);
+  const base=job.scope.length===23?null:job.auditBase||job.article.quality?.review,review=qaValidateAudit(data.result,job.article,job.scope,base,job.correctionIds?.length?job.correctionIds:null);
+  if(job.correctionIds?.length){review.scope.correctionIds=[...job.correctionIds];review.scope.preservedIds=QA_IDS.filter(id=>!job.correctionIds.includes(id))}
+  qaInstall(job.article,review);job.auditBase=qaClone(review);qaQueueReportRepairs(job,review);const validIds=job.scope.filter(id=>!review.issueValidation?.invalidIds?.includes(id));job.auditDone=[...new Set([...(job.auditDone||[]),...validIds])];if(job.correctionIds?.length)job.displayArticle=qaPreparedDisplay(job.article,job.correctionIds.filter(id=>!job.auditDone.includes(id)));job.auditFingerprints=job.auditFingerprints||{};for(const id of validIds)job.auditFingerprints[id]=qeFingerprint(job.article);job.deferredAudit=(job.deferredAudit||[]).filter(id=>!job.scope.includes(id));job.history.push({step:'audit',seconds:Math.max(0,(Date.now()-(job.phaseStarted||Date.now()))/1000),round:job.rounds,ids:[...job.scope],remaining:qaPending(job.article),at:new Date().toISOString()});if(job.auditTodo?.length)return qaContinueAudit(job);job.operation='after_audit';job.phase='after_audit';job.scope=[];job.pendingAuditScope=[];qaAudited(job);qaCheckpoint(job);
   if(job.mode==='audit')return qaFinish(job,'reviewed');return qaNext(job);
  }catch(e){if(qaRetryConstraint(job,e))return;qaFail(e.message||'Не удалось принять точечные правки.')}
 }
@@ -315,24 +362,25 @@ function qaProgressView(job,now=Date.now()){
  const elapsed=Math.max(0,(now-job.started)/1000),phase=Math.max(0,(now-(job.phaseStarted||job.started))/1000),steps={connecting:3,authenticating:8,starting:13,generating:Math.min(85,20+phase/4),validating:95};
  job.percent=Math.max(job.percent||0,Math.min(98,Math.floor(steps[job.stage]||3)));
  const p=qaWorkProgress(job),name=id=>'№ '+id+' — '+(id===22?'Доверие и прозрачность публикации':criteria[id-1]),position=p.index?'критерий '+p.index+' из '+p.total+': '+name(p.active):'',audit=job.operation==='focused_audit',done=(job.auditDone||[]).length,total=(job.auditPlan||job.scope).length;
- let label=job.operation==='patch'?'Исправляем '+position:job.operation==='illustrate'?'Создаём изображение · '+position:job.operation==='linkcheck'?'Проверяем ссылки · '+position:job.operation==='after_audit'?'Сохраняем результат':job.mode==='audit'?(job.applyPrepared?'Оцениваем исправленные критерии':'Оцениваем 23 критерия'):job.flushingDependencies?'Завершающая проверка связанных критериев':'Проверяем результат · '+position;
+ let label=job.operation==='patch'?'Исправляем '+position:job.operation==='illustrate'?'Создаём изображение · '+position:job.operation==='linkcheck'?'Проверяем ссылки · '+position:job.operation==='after_audit'?'Сохраняем результат':job.mode==='audit'?(job.assessmentAction==='full'?'Оцениваем всю статью: 23 критерия':job.applyPrepared?'Оцениваем исправленные критерии':job.correctionIds?.length?'Оцениваем выбранные критерии':'Оцениваем 23 критерия'):job.flushingDependencies?'Завершающая проверка связанных критериев':'Проверяем результат · '+position;
+ if(job.mode==='audit'&&job.assessmentAction==='corrections')label='Оцениваем исправленные критерии: '+(done+1)+(job.scope.length>1?'–'+Math.min(total,done+job.scope.length):'')+' из '+total;
  if(job.mode==='audit'&&job.scope.some(id=>job.auditRepairAttempts?.[id]))label='Уточняем оценку: '+job.scope.map(name).join('; ');
  if(job.cancelling)label='Останавливаем работу…';
- const detail=audit?'Проверка '+(done+1)+'–'+Math.min(total,done+job.scope.length)+' из '+total+' затронутых критериев: '+job.scope.map(name).join('; ')+'. Текст на этом этапе не меняется.':job.operation==='patch'?(job.mode==='fix'?'Точечное исправление одного критерия. Оценка запускается отдельно кнопкой «Запустить оценку».':'Точечное исправление одного критерия. После него — проверка результата.'):'';
+ const detail=audit?'Проверка '+(done+1)+'–'+Math.min(total,done+job.scope.length)+' из '+total+(job.correctionIds?.length?(job.applyPrepared?' исправленных критериев: ':' выбранных критериев: '):' критериев: ')+job.scope.map(name).join('; ')+'. Текст на этом этапе не меняется.':job.operation==='patch'?(job.mode==='fix'?'Точечное исправление одного критерия. Оценка запускается отдельно кнопкой «Запустить оценку исправленных критериев».':'Точечное исправление одного критерия. После него — проверка результата.'):'';
  const queue=p.total?'Очередь: '+p.total+(job.mode==='fix'?' · обработано: ':' · закрыто: ')+p.closed+' · осталось: '+(p.total-p.closed)+'. ':'';
  const eta=qaRemainingEstimate(job,now);const added=(job.queue?.ids||[]).filter(id=>!job.queue.initialIds.includes(id));return {percent:job.percent,label,remaining:eta.text,detail:detail+(added.length?' Добавлены после проверки: '+added.map(name).join('; ')+'.':''),time:queue+'Прошло '+qeHelperDuration(elapsed)+(job.detail?' · '+job.detail:'')+' · время уточняется по завершённым этапам'};
 }
 function qaCriterionLabel(n){return n%100>=11&&n%100<=14?'критериев':n%10===1?'критерий':n%10>=2&&n%10<=4?'критерия':'критериев'}
 function qaPrimaryButton(a){
  if(!qeText(qeDoc(a)))return `<button class="btn primary" onclick="uiOpenStructure()">Сгенерировать статью</button>`;
- const owner=get(),ctx=uiQualityContext(),c=owner?.qualityAutofixCheckpoint,valid=c&&qaResumeAvailable(owner,ctx.draft?'draft':'current',qaTargetToken(owner,ctx.draft?'draft':'current',ctx.d)),waiting=valid&&(c.phase==='awaiting_assessment'||['focused_audit','after_audit'].includes(c.operation)||c.phase==='audit_pending'),pending=valid&&c.fixPlan?.length?c.fixPlan.filter(id=>!c.fixDoneIds?.includes(id)&&!c.blockedIds?.includes(id)):qaPending(a).filter(id=>!a.quality?.review?.issueValidation?.invalidIds?.includes(id)),canFix=!waiting&&((valid&&c.operation==='patch')||qeCurrent(a)&&qaAutoReview(a)&&!a.quality?.review?.provisional)&&pending.length;
- return `<div class="actions"><button class="btn ${waiting?'primary':''}" onclick="qaStart('audit')" ${qeHelperJob?'disabled':''}>Запустить оценку</button><button class="btn ${waiting?'':'primary'}" onclick="qaStart('fix')" ${qeHelperJob||!canFix?'disabled':''}>Исправить ${pending.length} ${qaCriterionLabel(pending.length)}</button></div>`;
+ const owner=get(),ctx=uiQualityContext(),c=owner?.qualityAutofixCheckpoint,valid=c&&qaResumeAvailable(owner,ctx.draft?'draft':'current',qaTargetToken(owner,ctx.draft?'draft':'current',ctx.d)),waiting=valid&&(c.phase==='awaiting_assessment'||['focused_audit','after_audit'].includes(c.operation)||c.phase==='audit_pending'),scope=valid?qaCorrectionScope(c):[],pending=valid&&c.fixPlan?.length?c.fixPlan.filter(id=>!c.fixDoneIds?.includes(id)&&!c.blockedIds?.includes(id)):qaPending(a).filter(id=>!a.quality?.review?.issueValidation?.invalidIds?.includes(id)),canFix=!waiting&&((valid&&c.operation==='patch')||qeCurrent(a)&&qaAutoReview(a)&&!a.quality?.review?.provisional)&&pending.length;
+ return `<div class="actions"><button class="btn ${waiting?'':'primary'}" onclick="qaStart('audit')" ${qeHelperJob?'disabled':''}>Запустить оценку всей статьи</button><button class="btn ${waiting?'primary':''}" onclick="qaStart('recheck')" ${qeHelperJob||!scope.length?'disabled':''} title="Проверяет только номера исправленных пунктов">Запустить оценку исправленных критериев</button><button class="btn" onclick="qaStart('fix')" ${qeHelperJob||!canFix?'disabled':''}>Исправить ${pending.length} ${qaCriterionLabel(pending.length)}</button></div>`;
 }
 function qaRenderPanel(a){
  const j=qeHelperJob?.kind==='autofix'?qeHelperJob:null,owner=get(),checkpoint=owner?.qualityAutofixCheckpoint,cycle=a.quality?.autofix;
  let html='<div class="qe-notice"><b>Стандарт 2 · Яндекс · автоматическая проверка</b><p class="qe-note">Оценка и точечные исправления запускаются отдельно. Галочки не означают гарантию поисковых позиций или проверку человеком.</p></div>';
  if(j){const p=qaProgressView(j);html+=`<p class="qe-note">Обрабатывается: ${esc(j.articleTitle)}</p><div class="qe-progress-card"><div class="qa-progress-heading"><b id="qaStage">${esc(p.label)}</b><strong id="qaRemaining">${esc(p.remaining)}</strong><span id="qaPercent">Текущий этап: около ${p.percent}%</span></div><p id="qaDetail" class="qe-note">${esc(p.detail)}</p><div class="qe-progress-track"><span id="qaBar" style="width:${p.percent}%"></span></div><p id="qaTime" class="qe-note">${esc(p.time)}</p><button class="btn" onclick="qeCancelPlusRevision()">${j.mode==='audit'?'Остановить оценку':'Остановить исправления'}</button></div>`}
- else if(checkpoint&&checkpoint.targetToken===qaTargetToken(owner,checkpoint.target,checkpoint.target==='draft'?owner.generationDraft:null))html+='<p class="qe-notice">'+(checkpoint.phase==='awaiting_assessment'?'Исправления сохранены. Нажмите «Запустить оценку», чтобы проверить изменённые пункты.':'Сохранён незавершённый этап. «Исправить критерии» продолжает правки; «Запустить оценку» проверяет сохранённый вариант.')+'</p>';
+ else if(checkpoint&&checkpoint.targetToken===qaTargetToken(owner,checkpoint.target,checkpoint.target==='draft'?owner.generationDraft:null))html+='<p class="qe-notice">'+(checkpoint.phase==='awaiting_assessment'?'Исправления сохранены. Нажмите «Запустить оценку исправленных критериев», чтобы проверить изменённые пункты.':'Сохранён незавершённый этап. «Исправить критерии» продолжает правки; «Запустить оценку исправленных критериев» проверяет только сохранённые правки.')+'</p>';
  else if(checkpoint)html+='<p class="qe-notice">Сохранены правки прежней версии. <button class="btn" onclick="qaDownloadCheckpoint()">Скачать сохранённый вариант JSON</button></p>';
  const ignored=[...new Set((j?.history||cycle?.history||[]).filter(x=>x.step==='patch').flatMap(x=>x.ignoredSeo||[]))].filter(k=>['title','description','h1'].includes(k));if(ignored.length)html+='<p class="qe-note">SEO-поля вне текущего задания сохранены без изменений: '+ignored.map(k=>({title:'Title',description:'Description',h1:'H1'}[k])).join(', ')+'. Точечные правки текста проверяются отдельно.</p>';
  const size=qaLengthState(j?.article||a);if(size?.deviation)html+='<p class="qe-note">Объём: '+size.after+' знаков; выбранный диапазон '+size.min+'–'+size.max+'. Корректировка объёма входит в критерий 2.</p>';
