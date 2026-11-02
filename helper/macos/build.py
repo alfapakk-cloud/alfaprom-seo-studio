@@ -7,7 +7,7 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-APP = Path('/private/tmp/alfaprom-macos-build-184/ALFAPROM Helper.app')
+APP = Path('/private/tmp/alfaprom-macos-build-185/ALFAPROM Helper.app')
 if APP.exists():
     shutil.rmtree(APP)
 contents = APP / 'Contents'
@@ -24,15 +24,15 @@ for library in (resources / 'helper/lib').glob('*.dylib'):
 for name in ['generation.js', 'quality-autofix.js']:
     shutil.copy2(ROOT / name, resources / 'helper' / name)
 # Protocol 10 adds literal patches, scoped audits and verified public evidence.
-(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.8.4', 'generation.js').replace('quality-autofix.js?v=1.8.4', 'quality-autofix.js'), encoding='utf-8')
+(resources / 'helper' / 'studio.html').write_text((ROOT / 'index.html').read_text(encoding='utf-8').replace('generation.js?v=1.8.5', 'generation.js').replace('quality-autofix.js?v=1.8.5', 'quality-autofix.js'), encoding='utf-8')
 info = {
     'CFBundleIdentifier': 'org.alfaprom.seo-helper',
     'CFBundleName': 'ALFAPROM Helper',
     'CFBundleDisplayName': 'Помощник АЛЬФАПРОМ',
     'CFBundleExecutable': 'ALFAPROMHelper',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '1.8.4',
-    'CFBundleVersion': '18',
+    'CFBundleShortVersionString': '1.8.5',
+    'CFBundleVersion': '19',
     'LSMinimumSystemVersion': '12.0',
     'LSUIElement': True,
     'CFBundleURLTypes': [{'CFBundleURLName': 'org.alfaprom.seo-helper.start', 'CFBundleTypeRole': 'Viewer', 'CFBundleURLSchemes': ['alfaprom-seo']}],

@@ -18,9 +18,10 @@ batch=(root / 'docs/tests/batches182.browser.js').read_text(encoding='utf-8')
 seo_guard=(root / 'docs/tests/seo_guard183.browser.js').read_text(encoding='utf-8')
 volume_resume=(root / 'docs/tests/volume_resume183.browser.js').read_text(encoding='utf-8')
 queue184=(root / 'docs/tests/queue184.browser.js').read_text(encoding='utf-8')
+report185=(root / 'docs/tests/report185.browser.js').read_text(encoding='utf-8')
 marker = ' const failed=tests.filter(t=>!t.ok);'
 assert tests.count(marker) == 1
-tests = tests.replace(marker, generation + '\n' + ui + '\n' + update + '\n' + formats + '\n' + quality_versions + '\n' + autofix + '\n' + compat + '\n' + batch + '\n' + seo_guard + '\n' + volume_resume + '\n' + queue184 + '\n' + marker).replace('</script', '<\\/script')
+tests = tests.replace(marker, generation + '\n' + ui + '\n' + update + '\n' + formats + '\n' + quality_versions + '\n' + autofix + '\n' + compat + '\n' + batch + '\n' + seo_guard + '\n' + volume_resume + '\n' + queue184 + '\n' + report185 + '\n' + marker).replace('</script', '<\\/script')
 head, tail = source.rsplit('</body>', 1)
 (root / '.quality-tests.html').write_text(head + '<script>' + tests + '</script></body>' + tail, encoding='utf-8')
 print('Open http://127.0.0.1:8765/.quality-tests.html after starting python3 -m http.server 8765')
